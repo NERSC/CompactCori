@@ -28,9 +28,10 @@ simulation_height = args.height if args.height else 1000
 simulation_width = args.width if args.width else 1000
 force_constant = args.force if args.force else 1
 
-particles = None
+particles = []
 
 class Particle:
+    particles = []
     def __init__(self, magnitude = 1):
         self.x_position = random.randint(0, simulation_width)
         self.y_position = random.randint(0, simulation_width)
@@ -38,7 +39,7 @@ class Particle:
         self.neighbors = None
         self.x_force = None
         self.y_force = None
-        self.particles = particles
+        particles.append(self)
 
     def euclidean_distance_to(self, particle):
         x = abs(self.x_position - particle.x_position)
@@ -49,19 +50,19 @@ class Particle:
         self.neighbors = []
         for particle in particles:
             euclidean_distance, x_distance, y_distance = self.euclidean_distance_to(particle)
-            if euclidean_distance < interaction_radius:
+            if euclidean_distance < interaction_radius and particle is not self:
                 self.neighbors.append((particle, x_distance, y_distance))
 
-    def calcaulate_force(self, particle, x_distance, y_distance):
-        x =  force_constant * (self.magnitude * particle.magnitude)/pow(x_distance, 2)
-        y =  force_constant * (self.magnitude * particle.magnitude)/pow(y_distance, 2)
+    def calculate_force(self, particle, x_distance, y_distance):
+        x = force_constant * (self.magnitude * particle.magnitude)/pow(x_distance, 2) if x_distance else 0
+        y = force_constant * (self.magnitude * particle.magnitude)/pow(y_distance, 2) if y_distance else 0
         return x,y
 
     def calculate_net_force(self):
         self.x_force = 0
         self.y_force = 0
         for neighbor, x_distance, y_distance in self.neighbors:
-            x, y = calculate_force(neighbor, x_distance, y_distance)
+            x, y = self.calculate_force(neighbor, x_distance, y_distance)
             self.x_force += x
             self.y_force += y
 
@@ -70,16 +71,24 @@ class Particle:
         self.y_position += self.y_force
 
     def __str__(self):
-        return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(self.neighbors) + "neighbors"
+        if self.neighbors:
+            return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(len(self.neighbors)) + " neighbors"
+        else:
+            return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(self.neighbors) + " neighbors"
 
 
 # Create Particles
-particles = [Particle() for particle in range(num_particles)]
+for _ in range(num_particles):
+    Particle()
 
 # Run simulation
 while True:
-#    print(*particles, sep='\n')
-    map(lambda particle: particle.populate_neighbors(), particles)
-    map(lambda particle: particle.calculate_net_force(), particles)
-    map(lambda particle: particle.move_particles(), particles)
+    print('\n')
+    print(*particles, sep='\n')
+    for particle in particles:
+        particle.populate_neighbors()
+    for particle in particles:
+        particle.calculate_net_force()
+    for particle in particles:
+        particle.move_particle()
 
