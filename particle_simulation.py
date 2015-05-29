@@ -19,7 +19,7 @@ import math
 # TODO add argparse.
 
 ### Temporary vars:
-num_particles = 200000
+num_particles = 20
 interaction_radius = 10
 force_amount = 50
 simulation_width = 1000
@@ -30,10 +30,9 @@ FORCE_CONSTANT = 1
 particles = None
 
 class Particle:
-    def __init__(self, x = random.randint(0, simulation_width),
-            y = random.randint(0, simulation_height), magnitude = 1):
-        self.x_position = x
-        self.y_position = y
+    def __init__(self, magnitude = 1):
+        self.x_position = random.randint(0, simulation_width)
+        self.y_position = random.randint(0, simulation_width)
         self.magnitude = magnitude
         self.neighbors = None
         self.x_force = None
@@ -69,16 +68,17 @@ class Particle:
         self.x_position += self.x_force
         self.y_position += self.y_force
 
+    def __str__(self):
+        return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(self.neighbors) + "neighbors"
+
+
 # Create Particles
 particles = [Particle() for particle in range(num_particles)]
 
 # Run simulation
-# TODO: Find a cleaner way to do this
 while True:
-    for particle in particles:
-        particle.populate_neighbors()
-    for particle in particles:
-        particle.calculate_net_force()
-    for particle in particles:
-        particle.move_particle()
+    print(*particles, sep='\n')
+    map(lambda particle: particle.populate_neighbors(), particles)
+    map(lambda particle: particle.calculate_net_force(), particles)
+    map(lambda particle: particle.move_particles(), particles)
 
