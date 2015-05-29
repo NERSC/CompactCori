@@ -38,10 +38,16 @@ particles = []
 
 class Particle:
     particles = []
-    def __init__(self, magnitude = 1, x_velocity = 0, y_velocity = 0):
-        self.x_position = random.randint(0, simulation_width)
-        self.y_position = random.randint(0, simulation_width)
-        self.magnitude = magnitude
+    def __init__(self, mass = 1, x_position = None, y_position = None, x_velocity = 0, y_velocity = 0):
+        if x_position == None:
+            self.x_position = random.randint(0, simulation_width)
+        else:
+            self.x_position = x_position
+        if y_position == None:
+            self.y_position = random.randint(0, simulation_height)
+        else:
+            self.y_position = y_position
+        self.mass = mass
         self.neighbors = None
         self.x_force = None
         self.y_force = None
@@ -52,7 +58,7 @@ class Particle:
     def euclidean_distance_to(self, particle):
         x = abs(self.x_position - particle.x_position)
         y = abs(self.y_position - particle.y_position)
-        return (math.sqrt(pow(x, 2) + pow(y, 2)), x, y)
+        return (math.sqrt((x**2) + (y**2)), x, y)
 
     def populate_neighbors(self):
         self.neighbors = []
@@ -62,8 +68,8 @@ class Particle:
                 self.neighbors.append((particle, x_distance, y_distance))
 
     def calculate_force(self, particle, x_distance, y_distance):
-        x = force_constant * (self.magnitude * particle.magnitude)/pow(x_distance, 2) if x_distance else 0
-        y = force_constant * (self.magnitude * particle.magnitude)/pow(y_distance, 2) if y_distance else 0
+        x = force_constant * (self.mass * particle.mass)/(x_distance**2) if x_distance else 0
+        y = force_constant * (self.mass * particle.mass)/(y_distance**2) if y_distance else 0
         return x,y
 
     def calculate_net_force(self):
@@ -111,7 +117,7 @@ class Particle:
             return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(self.neighbors) + " neighbors"
 
 
-# Create Particlesj
+# Create Particles
 for _ in range(num_particles):
     Particle()
 
@@ -129,7 +135,7 @@ def timestep():
 # Run simulation
 #while True:
 for i in range(3):
-    print('\n')
-    print(*particles, sep='\n')
+#    print('\n')
+#    print(*particles, sep='\n')
     timestep()
 
