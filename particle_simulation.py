@@ -2,31 +2,32 @@
 """
 A parallelized MD simulation in Python written for version 1 of the Compact Cory
 project at NERSC.
-
-    num_particles
-    step_size
-    interaction_radius
-    force_amount
-    particle_type
-    simulation_width
-    simulation_height
-    initial_distribution
 """
 import argparse
 import random
 import math
 
-# TODO add argparse.
+# Parse arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("-n", "--numparticles", type=int,
+        help = "number of particles in simulation")
+parser.add_argument("-r", "--radius", type=int,
+        help = "radius of particle interaction")
+parser.add_argument("-f", "--force", type=int,
+        help = "force between particles")
+parser.add_argument("--height", type=int,
+        help = "height of simulation window")
+parser.add_argument("--width", type=int,
+        help = "width of simulation window")
+args = parser.parse_args()
 
-### Temporary vars:
-num_particles = 20
-interaction_radius = 10
-force_amount = 50
-simulation_width = 1000
-simulation_height = 1000
-### End temporary vars
+num_particles = args.numparticles if args.numparticles else 20
+interaction_radius = args.radius if args.radius else 10
+force_amount = args.force if args.force else 50
+simulation_height = args.height if args.height else 1000
+simulation_width = args.width if args.width else 1000
+force_constant = args.force if args.force else 1
 
-FORCE_CONSTANT = 1
 particles = None
 
 class Particle:
@@ -52,12 +53,12 @@ class Particle:
                 self.neighbors.append((particle, x_distance, y_distance))
 
     def calcaulate_force(self, particle, x_distance, y_distance):
-        x =  FORCE_CONSTANT * (self.magnitude * particle.magnitude)/pow(x_distance, 2)
-        y =  FORCE_CONSTANT * (self.magnitude * particle.magnitude)/pow(y_distance, 2)
+        x =  force_constant * (self.magnitude * particle.magnitude)/pow(x_distance, 2)
+        y =  force_constant * (self.magnitude * particle.magnitude)/pow(y_distance, 2)
         return x,y
 
     def calculate_net_force(self):
-        telf.x_force = 0
+        self.x_force = 0
         self.y_force = 0
         for neighbor, x_distance, y_distance in self.neighbors:
             x, y = calculate_force(neighbor, x_distance, y_distance)
@@ -77,7 +78,7 @@ particles = [Particle() for particle in range(num_particles)]
 
 # Run simulation
 while True:
-    print(*particles, sep='\n')
+#    print(*particles, sep='\n')
     map(lambda particle: particle.populate_neighbors(), particles)
     map(lambda particle: particle.calculate_net_force(), particles)
     map(lambda particle: particle.move_particles(), particles)
