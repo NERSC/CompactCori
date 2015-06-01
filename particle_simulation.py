@@ -9,6 +9,7 @@ locating in-range neighbors.
 import argparse
 import random
 import math
+import tkinter
 
 # Parse arguments
 parser = argparse.ArgumentParser()
@@ -37,7 +38,7 @@ dt = args.dt if args.dt else 0.00001
 particles = []
 
 class Particle:
-    particles = []
+    static_particles = particles
     def __init__(self, mass = 1, x_position = None, y_position = None, x_velocity = 0, y_velocity = 0):
         if x_position == None:
             self.x_position = random.randint(0, simulation_width)
@@ -53,7 +54,6 @@ class Particle:
         self.y_force = None
         self.x_velocity = x_velocity
         self.y_velocity = y_velocity
-        particles.append(self)
 
     def euclidean_distance_to(self, particle):
         x = abs(self.x_position - particle.x_position)
@@ -62,7 +62,7 @@ class Particle:
 
     def populate_neighbors(self):
         self.neighbors = []
-        for particle in particles:
+        for particle in Particle.static_particles:
             euclidean_distance, x_distance, y_distance = self.euclidean_distance_to(particle)
             if euclidean_distance < interaction_radius and particle is not self:
                 self.neighbors.append((particle, x_distance, y_distance))
@@ -110,16 +110,16 @@ class Particle:
         else:
             self.y_position = new_y
 
-    def __str__(self):
+    def __repr__(self):
         if self.neighbors:
-            return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(len(self.neighbors)) + " neighbors"
+            return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(len(self.neighbors)) + " neighbors\n"
         else:
-            return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(self.neighbors) + " neighbors"
+            return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(self.neighbors) + " neighbors\n"
 
 
 # Create Particles
 for _ in range(num_particles):
-    Particle()
+    particles.append(Particle())
 
 # One timestep
 def timestep():
