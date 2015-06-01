@@ -85,6 +85,9 @@ class Particle:
         self.y_velocity += self.y_force * dt
 
     def move_particle(self):
+        """
+        Naively assumes velocity is less than the size of the simulation window
+        """
         x_displacement = self.x_velocity * dt
         y_displacement = self.y_velocity * dt
 
@@ -94,10 +97,10 @@ class Particle:
         # Bounce the particle against the walls
         if new_x < 0:
             self.x_velocity *= -1
-            self.x_position = x_displacement- self.x_position
+            self.x_position = x_displacement - self.x_position
         elif new_x > simulation_width:
             self.x_velocity *= -1
-            self.x_position = x_displacement- self.x_position
+            self.x_position = x_displacement + self.x_position
         else:
             self.x_position = new_x
 
@@ -106,16 +109,16 @@ class Particle:
             self.y_position = y_displacement - self.y_position
         elif new_y > simulation_width:
             self.y_velocity *= -1
-            self.y_position = y_displacement - self.y_position
+            self.y_position = y_displacement + self.y_position
         else:
             self.y_position = new_y
+
 
     def __repr__(self):
         if self.neighbors:
             return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(len(self.neighbors)) + " neighbors\n"
         else:
             return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(self.neighbors) + " neighbors\n"
-
 
 # Create Particles
 for _ in range(num_particles):
