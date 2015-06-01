@@ -9,7 +9,40 @@ locating in-range neighbors.
 import argparse
 import random
 import math
-import tkinter
+import copy
+import tkinter as tk
+
+class Application(tk.Frame):
+    def say_hi(self):
+        print("hi there, everyone!")
+
+    def createWidgets(self):
+        self.QUIT = tk.Button(self)
+        self.QUIT["text"] = "QUIT"
+        self.QUIT["fg"]   = "red"
+        self.QUIT["command"] =  self.quit
+
+        self.QUIT.pack({"side": "left"})
+
+        self.hi_there = tk.Button(self)
+        self.hi_there["text"] = "Hello",
+        self.hi_there["command"] = self.say_hi
+
+        self.hi_there.pack({"side": "left"})
+
+    def __init__(self, master=None):
+        tk.Frame.__init__(self, master)
+        self.pack()
+        self.createWidgets()
+
+#root = tk.Tk()
+#app = Application(master=root)
+#canvas = tk.Canvas(root, width = 300, height = 300)
+#canvas.pack()
+#app.master.title("Particle Simulation")
+#app.mainloop()
+#root.destroy()
+canvas = None
 
 # Parse arguments
 parser = argparse.ArgumentParser()
@@ -41,11 +74,11 @@ class Particle:
     static_particles = particles
     def __init__(self, mass = 1, x_position = None, y_position = None, x_velocity = 0, y_velocity = 0):
         if x_position == None:
-            self.x_position = random.randint(0, simulation_width)
+            self.x_position = random.randint(0, simulation_width - 1)
         else:
             self.x_position = x_position
         if y_position == None:
-            self.y_position = random.randint(0, simulation_height)
+            self.y_position = random.randint(0, simulation_height - 1)
         else:
             self.y_position = y_position
         self.mass = mass
@@ -98,7 +131,7 @@ class Particle:
         if new_x < 0:
             self.x_velocity *= -1
             self.x_position = x_displacement - self.x_position
-        elif new_x > simulation_width:
+        elif new_x >= simulation_width:
             self.x_velocity *= -1
             self.x_position = x_displacement + self.x_position
         else:
@@ -107,12 +140,14 @@ class Particle:
         if new_y < 0:
             self.y_velocity *= -1
             self.y_position = y_displacement - self.y_position
-        elif new_y > simulation_width:
+        elif new_y >= simulation_height:
             self.y_velocity *= -1
             self.y_position = y_displacement + self.y_position
         else:
             self.y_position = new_y
-
+#        self.canvas.create_oval(self.x_position, self.y_position, self.x_position, self.y_position, fill="red")
+        self.x_position = int(self.x_position)
+        self.y_position = int(self.y_position)
 
     def __repr__(self):
         if self.neighbors:
@@ -123,6 +158,28 @@ class Particle:
 # Create Particles
 for _ in range(num_particles):
     particles.append(Particle())
+
+def text_simulation():
+    """
+    Print out an ASCII-based representation of the simulation to STDOUT
+    """
+    # Populate nested list
+    arr = [[" "] * simulation_height for _ in range(simulation_width)]
+    for particle in particles:
+        arr[particle.x_position][particle.y_position] = "o"
+
+    # Convert list to buffer to print to STDOUT
+    buf = " "
+    for i in range(simulation_width):
+        buf += str(i % 10)
+    buf += "\n " + "-" * simulation_width + "\n"
+    for j in range(simulation_height):
+        buf += "|"
+        for i in range(simulation_width):
+            buf += arr[i][j]
+        buf += "|" +  str(j) + "\n"
+    buf += " " + "-" * simulation_width
+    print(buf)
 
 # One timestep
 def timestep():
@@ -141,4 +198,5 @@ for i in range(3):
 #    print('\n')
 #    print(*particles, sep='\n')
     timestep()
+    text_simulation()
 
