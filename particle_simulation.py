@@ -79,8 +79,8 @@ class Particle:
         self.y_velocity = y_velocity if (y_velocity != None) else random.randint(-1*simulation_height//10, simulation_height//10)
         self.mass = mass
         self.neighbors = None
-        self.x_force = None
-        self.y_force = None
+        self.x_accel = 0
+        self.y_accel = 0
 
     def euclidean_distance_to(self, particle):
         x = abs(self.x_position - particle.x_position)
@@ -100,21 +100,19 @@ class Particle:
         return x,y
 
     def calculate_net_force(self):
-        self.x_force = 0
-        self.y_force = 0
+        self.x_accel = 0
+        self.y_accel = 0
         for neighbor, x_distance, y_distance in self.neighbors:
             x, y = self.calculate_force(neighbor, x_distance, y_distance)
-            self.x_force += x
-            self.y_force += y
-
-    def update_velocity(self):
-        self.x_velocity += self.x_force * dt
-        self.y_velocity += self.y_force * dt
+            self.x_accel += x * x_distance
+            self.y_accel += y * y_distance
 
     def move_particle(self):
         """
         Naively assumes velocity is less than the size of the simulation window
         """
+        self.x_velocity += self.x_accel * dt
+        self.y_velocity += self.y_accel * dt
         x_displacement = self.x_velocity * dt
         y_displacement = self.y_velocity * dt
 
@@ -181,8 +179,6 @@ def timestep():
         particle.populate_neighbors()
     for particle in particles:
         particle.calculate_net_force()
-    for particle in particles:
-        particle.update_velocity()
     for particle in particles:
         particle.move_particle()
 
