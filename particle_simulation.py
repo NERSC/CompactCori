@@ -56,7 +56,7 @@ parser.add_argument("--height", type=int,
         help = "height of simulation window")
 parser.add_argument("--width", type=int,
         help = "width of simulation window")
-parser.add_argument("-d", "--dt", type=int,
+parser.add_argument("-d", "--dt", type=float,
         help = "multiplier time constant")
 args = parser.parse_args()
 
@@ -66,7 +66,7 @@ force_amount = args.force if args.force else 50
 simulation_height = args.height if args.height else 1000
 simulation_width = args.width if args.width else 1000
 force_constant = args.force if args.force else 1
-dt = args.dt if args.dt else 0.00001
+dt = args.dt if args.dt else 0.0005
 
 particles = []
 
@@ -118,11 +118,11 @@ class Particle:
         self.y_position += self.y_velocity * dt
 
         while self.x_position < 0 or self.x_position > simulation_width:
-            self.x_position = self.x_position*-1 if self.x_position < 0 else 2*size-self.x_position
+            self.x_position = self.x_position*-1 if self.x_position < 0 else 2*simulation_width - self.x_position
             self.x_velocity *= -1
 
-        while self.y_position < 0 or self.y_position > simulation_width:
-            self.y_position = self.y_position*-1 if self.y_position < 0 else 2*size-self.y_position
+        while self.y_position < 0 or self.y_position > simulation_height:
+            self.y_position = self.y_position*-1 if self.y_position < 0 else 2*simulation_height - self.y_position
             self.y_velocity *= -1
 
         self.x_position = int(self.x_position)
@@ -171,7 +171,7 @@ def timestep():
 
 # Run simulation
 #while True:
-for i in range(3):
+for i in range(300):
     timestep()
     text_simulation()
 
