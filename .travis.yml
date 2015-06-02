@@ -1,0 +1,8 @@
+language: python
+python:
+  - "3.4"
+# command to install dependencies
+#install: "command to [run]"
+
+# command to run tests
+script: python particle_simulation_tests.py
