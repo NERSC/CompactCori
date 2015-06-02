@@ -73,20 +73,14 @@ particles = []
 class Particle:
     static_particles = particles
     def __init__(self, mass = 1, x_position = None, y_position = None, x_velocity = 0, y_velocity = 0):
-        if x_position == None:
-            self.x_position = random.randint(0, simulation_width - 1)
-        else:
-            self.x_position = x_position
-        if y_position == None:
-            self.y_position = random.randint(0, simulation_height - 1)
-        else:
-            self.y_position = y_position
+        self.x_position = x_position if (x_position != None) else random.randint(0, simulation_width - 1)
+        self.y_position = y_position if (y_position != None) else random.randint(0, simulation_height - 1)
+        self.x_velocity = x_velocity if (x_velocity != None) else random.randint(-1*simulation_height//10, simulation_height//10)
+        self.y_velocity = y_velocity if (y_velocity != None) else random.randint(-1*simulation_height//10, simulation_height//10)
         self.mass = mass
         self.neighbors = None
         self.x_force = None
         self.y_force = None
-        self.x_velocity = x_velocity
-        self.y_velocity = y_velocity
 
     def euclidean_distance_to(self, particle):
         x = abs(self.x_position - particle.x_position)
@@ -195,8 +189,6 @@ def timestep():
 # Run simulation
 #while True:
 for i in range(3):
-#    print('\n')
-#    print(*particles, sep='\n')
     timestep()
     text_simulation()
 
