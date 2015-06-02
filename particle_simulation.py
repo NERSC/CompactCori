@@ -113,31 +113,18 @@ class Particle:
         """
         self.x_velocity += self.x_accel * dt
         self.y_velocity += self.y_accel * dt
-        x_displacement = self.x_velocity * dt
-        y_displacement = self.y_velocity * dt
 
-        new_x = self.x_position + x_displacement
-        new_y = self.y_position + y_displacement
+        self.x_position += self.x_velocity * dt
+        self.y_position += self.y_velocity * dt
 
-        # Bounce the particle against the walls
-        if new_x < 0:
+        while self.x_position < 0 or self.x_position > simulation_width:
+            self.x_position = self.x_position*-1 if self.x_position < 0 else 2*size-self.x_position
             self.x_velocity *= -1
-            self.x_position = x_displacement - self.x_position
-        elif new_x >= simulation_width:
-            self.x_velocity *= -1
-            self.x_position = x_displacement + self.x_position
-        else:
-            self.x_position = new_x
 
-        if new_y < 0:
+        while self.y_position < 0 or self.y_position > simulation_width:
+            self.y_position = self.y_position*-1 if self.y_position < 0 else 2*size-self.y_position
             self.y_velocity *= -1
-            self.y_position = y_displacement - self.y_position
-        elif new_y >= simulation_height:
-            self.y_velocity *= -1
-            self.y_position = y_displacement + self.y_position
-        else:
-            self.y_position = new_y
-#        self.canvas.create_oval(self.x_position, self.y_position, self.x_position, self.y_position, fill="red")
+
         self.x_position = int(self.x_position)
         self.y_position = int(self.y_position)
 
