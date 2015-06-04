@@ -9,40 +9,12 @@ locating in-range neighbors.
 import argparse
 import random
 import math
-import copy
-import tkinter as tk
+import tkinter as tk            # Graphics
+import numpy as np              # Needed for mpi4py
+from mpi4py import MPI as mpi
 
-class Application(tk.Frame):
-    def say_hi(self):
-        print("hi there, everyone!")
-
-    def createWidgets(self):
-        self.QUIT = tk.Button(self)
-        self.QUIT["text"] = "QUIT"
-        self.QUIT["fg"]   = "red"
-        self.QUIT["command"] =  self.quit
-
-        self.QUIT.pack({"side": "left"})
-
-        self.hi_there = tk.Button(self)
-        self.hi_there["text"] = "Hello",
-        self.hi_there["command"] = self.say_hi
-
-        self.hi_there.pack({"side": "left"})
-
-    def __init__(self, master=None):
-        tk.Frame.__init__(self, master)
-        self.pack()
-        self.createWidgets()
-
-#root = tk.Tk()
-#app = Application(master=root)
-#canvas = tk.Canvas(root, width = 300, height = 300)
-#canvas.pack()
-#app.master.title("Particle Simulation")
-#app.mainloop()
-#root.destroy()
-canvas = None
+comm = mpi.COMM_WORLD
+rank = comm.Get_rank()
 
 # Parse arguments
 parser = argparse.ArgumentParser()
@@ -58,6 +30,8 @@ parser.add_argument("--width", type=int,
         help = "width of simulation window")
 parser.add_argument("-d", "--dt", type=float,
         help = "multiplier time constant")
+parser.add_argument("-a", "--ascii",
+        help = "output ascii of simulation to STDOUT")
 args = parser.parse_args()
 
 num_particles = args.numparticles if args.numparticles else 20
@@ -67,6 +41,8 @@ simulation_height = args.height if args.height else 1000
 simulation_width = args.width if args.width else 1000
 force_constant = args.force if args.force else 1
 dt = args.dt if args.dt else 0.0005
+ascii = True if args.ascii else False
+
 
 particles = []
 
@@ -173,5 +149,6 @@ def timestep():
 #while True:
 for i in range(300):
     timestep()
-    text_simulation()
+    if ascii:
+        text_simulation()
 
