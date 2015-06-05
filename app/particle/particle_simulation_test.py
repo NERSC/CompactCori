@@ -63,7 +63,6 @@ class TestParticleMethods(unittest.TestCase):
         a.x_velocity = 900
         a.y_velocity = 480
 
-        # Include a fudge factor of 0.001
         for _ in range(10000000):
             a.move_particle()
             self.assertGreater(test_width, a.x_position)

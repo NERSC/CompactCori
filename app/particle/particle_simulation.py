@@ -5,6 +5,8 @@ project at NERSC.
 
 This runs in O(n^2) time since all particles are compared to one another when
 locating in-range neighbors.
+
+Threads in mpi4py are 0-indexed
 """
 import argparse
 import random
@@ -30,8 +32,13 @@ parser.add_argument("--width", type=int,
         help = "width of simulation window")
 parser.add_argument("-d", "--dt", type=float,
         help = "multiplier time constant")
-parser.add_argument("-a", "--ascii",
+parser.add_argument("-a", "--ascii", action="store_true",
         help = "output ascii of simulation to STDOUT")
+parser.add_argument("-w", "--workers", type=int,
+        help = "number of workers to expect for parallel simulation")
+parser.add_argument("-s", "--serial", action="store_true",
+        help = "specifies if simulation should be run serially")
+
 args = parser.parse_args()
 
 num_particles = args.numparticles if args.numparticles else 20
@@ -42,13 +49,53 @@ simulation_width = args.width if args.width else 1000
 force_constant = args.force if args.force else 1
 dt = args.dt if args.dt else 0.0005
 ascii = True if args.ascii else False
-
+workers = args.ascii if args.ascii else 8
+serial = True if args.serial else False                             # Possible race condition with multiple workers but serial job
 
 particles = []
 
+# DRY out typechecking of arguments
+def validate_int(*args):
+    for arg in args:
+        if type(arg) is not int:
+            raise ArgumentError("incorrect type argument: " + type(arg) + " was passed instead of an int")
+
+def validate_list(*args):
+    for arg in args:
+        if type(arg) is not list:
+            raise ArgumentError("incorrect type argument: " + type(arg) + " was passed instead of a list")
+
+def validate_dict(*args):
+    for arg in args:
+        if type(arg) is not dict:
+            raise ArgumentError("incorrect type argument: " + type(arg) + " was passed instead of a dict")
+
+class Partition:
+    """
+    neighbor_threads is a dictionary where the key is an integer corresponding
+    to the 0-indexed thread number of the neighbor thread and the value is a
+    list of all particles in that neighboring location
+    """
+    def __init__(self, thread_num, particles):
+        validate_int(thread_num)
+        self.thread_num = thread_num
+
+    def set_neighbor_threads(neighbor_threads):
+        validate_dict(neighbor_threads)
+        self.neighbor_threads = neighbor_threads
+
+    def set_particles(self, new_particles):
+        validate_list(new_particles)
+        self.particles = new_particles
+
+    def set_neighbor_particles(self, neighbor_thread_num, new_particles):
+        validate_int(neighbor_thread_num)
+        validate_list(new_particles)
+        self.neighbor_threads[neighbor_thread_num] = new_particles
+
 class Particle:
     static_particles = particles
-    def __init__(self, mass = 1, x_position = None, y_position = None, x_velocity = 0, y_velocity = 0):
+    def __init__(self, thread_num = 0, x_position = None, y_position = None, x_velocity = 0, y_velocity = 0, mass = 1):
         self.x_position = x_position if (x_position != None) else random.randint(0, simulation_width - 1)
         self.y_position = y_position if (y_position != None) else random.randint(0, simulation_height - 1)
         self.x_velocity = x_velocity if (x_velocity != None) else random.randint(-1*simulation_height//10, simulation_height//10)
@@ -57,6 +104,7 @@ class Particle:
         self.neighbors = None
         self.x_accel = 0
         self.y_accel = 0
+        self.thread_num = thread_num
 
     def euclidean_distance_to(self, particle):
         x = abs(self.x_position - particle.x_position)
@@ -110,8 +158,17 @@ class Particle:
         else:
             return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(self.neighbors) + " neighbors\n"
 
-# Create Particles
+# Create Partitions and set neighbors
+partitions = []
+for i in range(workers):
+    partitions.append(Partition(i))
+
+
+
+# Create Particles for Parallel Processes
 for _ in range(num_particles):
+    curr_particle = Particle()
+
     particles.append(Particle())
 
 def text_simulation():
