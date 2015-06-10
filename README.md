@@ -1,8 +1,10 @@
-###GIT_README.md
+###Compact Cori
 
-This document outlines the Git style conventions used in this repository.
+Code and documentation related to the Compact Cori project at NERSC.
 
-####Branch Per Feature
+####Git Style Conventions
+
+#####Branch Per Feature
 There are two main git style conventions used in this repository.  The first is
 branch per feature.  This means that all changes to code are done on a branch
 off of master, meaning that there shouldn't ever be any changes made directly to
@@ -20,7 +22,7 @@ To create a branch:
 - Commit and push to the branch as usual
 - Do not merge into master
 
-#### Rebase, not Merge
+##### Rebase, not Merge
 The second git convention used in this repository is rebasing instead of
 merging.  This means that instead of correcting merge conflicts when merging
 back into master, we rebase work that is being merged into master off of master,
