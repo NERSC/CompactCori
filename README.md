@@ -2,8 +2,22 @@
 
 Code and documentation related to the Compact Cori project at NERSC.
 
-####Git Style Conventions
+####Code Style Conventions
+#####Editing
+- Spaces, not tabs
+- Four spaces per tab
+- No trailing whitespace
+- Newline at EOF
 
+#### Naming
+- snake_case for variable and method names
+- UpperCamelCase for class names
+- ALL_CAPS for constants
+- Descriptive variable/method names required (unless a counter, e.g. for i in
+  range(20))
+- Double quotes preferred over single quotes
+
+####Git Style Conventions
 #####Branch Per Feature
 There are two main git style conventions used in this repository.  The first is
 branch per feature.  This means that all changes to code are done on a branch
