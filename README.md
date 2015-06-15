@@ -18,4 +18,4 @@ Code and documentation related to the Compact Cori project at NERSC.
 - Double quotes preferred over single quotes
 
 #### Useful Notes/Links
-[Git Reference](https://github.com/NERSC/CompactCori/blob/master/documentation/GitReference.md)
+[Git Reference](https://github.com/NERSC/CompactCori/blob/master/reference/GitReference.md)
