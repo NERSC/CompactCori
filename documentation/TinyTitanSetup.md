@@ -23,7 +23,23 @@
    node rather than all the slave nodes.
 
 #### Run SPH
-1. Set up the XBox controller: [TODO]
-1. `cd` to get to `$HOME`
-1. Run `mpirun -f ~/mpihostfile -n 9 ./sph.out` to run SPH
+1. Make a directory called `scripts` in the master node's `$HOME` directory
+1. Create a file called `xboxlaunch.sh` in the `scripts` directory.  Edit it to
+   read:
+   ```
+   sudo rmmod xpad
+   sudo xboxdrv --config ~/SPH/controller_1.cnf --silent &
+   ```
+1. Set up a cron job that runs at reboot.  Run `crontab -e` and add `@reboot
+   /home/pi/scripts/xboxlaunch.sh`
+1. Start SPH automatically at boot by editing `~/.config/autostart/xbox.desktop`
+   to include:
+   ```
+   [Desktop Entry]
+
+   Type=Application
+
+   Exec=/home/pi/TinySetup/startsph
+   ```
+1. Run the `startsph` script in the `TinySetup` directory to run the simulation
 
