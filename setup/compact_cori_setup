@@ -1,0 +1,97 @@
+#!/bin/bash
+#
+# compact_cori_setup: set up a node in the Compact Cori cluster.  Assumes a
+#                     clean Debian install, that each node is named
+#                     CompactCori[i] for some integer i, and that this script is
+#                     run as root
+#
+# Author: Nicholas Fong
+#         Lawrence Berkeley National Laboratory
+#         National Energy Research Scientific Computing Center
+#
+# Usage:  compact_cori_setup [-h ][-n node_number]
+#
+# Acknowledgment:
+#         This work was supported by the Director, Office of Science,
+#         Division of Mathematical, Information, and Computational
+#         Sciences of the U.S. Department of Energy under contract
+#         DE-AC02-05CH11231.
+#
+#         This research used resources of the National Energy Research
+#         Scientific Computing Center, which is supported by the Office
+#         of Science of the U.S. Department of Energy.
+#
+# Update History:
+# YYYY-MM-DD INITIALS - DESCRIPTION
+# *****************************************************************************
+# 2015-06-19 NF       - Wrote initial script
+
+PROG=$(basename $0)
+
+error() {
+    echo -e "ERROR: $*" >&2
+    exit 1
+}
+
+usage() {
+    echo "USAGE: $PROG [-h ][-n node_number]"
+}
+
+while getopts "hn:" OPTION; do
+    case $OPTION in
+        h)
+            usage
+            exit 0
+            ;;
+        n)
+            node_num="$OPTARG"
+            # Argument Sanitation
+            re='^[0-9]+$'
+            if ! [[ $node_num =~ $re ]] ; then
+                error "Invalid argument: please enter an integer after the -n flag"
+            fi
+            ;;
+    esac
+done
+
+node_name="CompactCori$node_num"
+
+# Ensure this script is being run as root
+if [[ $EUID -ne 0 ]]; then
+   error "This script must be run as root"
+fi
+
+echo "Running apt-get update and dist-upgrade"
+apt-get -y update
+apt-get -y dist-upgrade
+echo "Installing vim mpich2 xboxdrv libglew-dev sshpass libav-tools tmux"
+apt-get -y install vim mpich2 xboxdrv libglew-dev sshpass libav-tools tmux
+
+echo "Setting network interface"
+tee /etc/network/interfaces <<-EOF
+auto lo
+
+iface lo inet loopback
+
+# iface eth0 inet dhcp
+
+auto eth0
+iface eth0 inet static
+address 10.0.0.$(($node_num+100))
+gateway 10.0.0.1
+netmask 255.0.0.0
+network 10.0.0.0
+broadcast 10.255.255.255
+
+# allow-hotplug wlan0
+# iface wlan0 inet manual
+# wpa-roam /etc/wpa_supplicant/wpa_supplicant.conf
+# iface default inet dhcp
+EOF
+
+echo "Generating SSH keys"
+ssh-keygen -N '' -b 4096 -f /home/ccori/.ssh/id_rsa
+
+echo "Sleeping for 10 seconds and then rebooting: ctrl+c to postpone reboot... "
+sleep 10
+shutdown -r now
