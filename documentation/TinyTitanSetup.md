@@ -22,6 +22,13 @@
    where it is on the master node, so it's easier to move the file on the master
    node rather than all the slave nodes.
 
+####Install PiBrot
+1. Clone the PiBrot repository hosted on the [TinyTitan GitHub Project
+   Page](https://github.com/TinyTitan/PiBrot/).
+1. `cd` into the PiBrot directory and edit the `Makefile` to include the `-lm`
+   argument after the `` command.
+1. run `make` followed by `make run`
+
 #### Run SPH
 1. Make a directory called `scripts` in the master node's `$HOME` directory
 1. Create a file called `xboxlaunch.sh` in the `scripts` directory.  Edit it to
