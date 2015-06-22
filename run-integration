@@ -1,0 +1,8 @@
+#PBS -q regular
+#PBS -l mppwidth=48
+#PBS -l walltime=00:01:00
+
+cd $PBS_O_WORKDIR
+module load python
+module swap python python/3.4
+aprun -n 48 python3 integrate.py
