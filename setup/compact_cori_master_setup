@@ -1,0 +1,105 @@
+#!/bin/bash
+#
+# compact_cori_master_setup: set up the master node in the Compact Cori cluster
+#
+# Author: Nicholas Fong
+#         Lawrence Berkeley National Laboratory
+#         National Energy Research Scientific Computing Center
+#
+# Usage:  compact_cori_master_setup -u username -p passphrase -n num_nodesber
+#
+# Acknowledgment:
+#         This work was supported by the Director, Office of Science,
+#         Division of Mathematical, Information, and Computational
+#         Sciences of the U.S. Department of Energy under contract
+#         DE-AC02-05CH11231.
+#
+#         This research used resources of the National Energy Research
+#         Scientific Computing Center, which is supported by the Office
+#         of Science of the U.S. Department of Energy.
+#
+# Update History:
+# YYYY-MM-DD INITIALS - DESCRIPTION
+# *****************************************************************************
+# 2015-06-19 NF       - Wrote initial script
+
+PROG=$(basename $0)
+
+error() {
+    echo -e "ERROR: $*" >&2
+    exit 1
+}
+
+usage() {
+    echo "USAGE: $PROG -u username -p passphrase -n num_nodes"
+}
+
+while getopts "hn:u:p:" OPTION; do
+    case $OPTION in
+        h)
+            usage
+            exit 0
+            ;;
+        n)
+            num_nodes="$OPTARG"
+            ;;
+        u)
+            user_name="$OPTARG"
+            ;;
+        p)
+            pass_phrase="$OPTARG"
+            ;;
+    esac
+done
+
+# Argument Sanitation
+re='^[0-9]+$'
+if ! [[ $num_nodes =~ $re ]] ; then
+    error "Invalid argument: please enter an integer after the -n flag"
+fi
+
+echo "Removing ~/mpihostsfile"
+rm -f /home/$user_name/mpihostsfile
+echo "Removing ~/.ssh/authorized_keys"
+rm -f /home/$user_name/.ssh/authorized_keys
+
+echo "Generating /home/$user_name/mpihostsfile"
+echo "Generating /home/$user_name/.ssh/authorized_keys"
+echo "Updating /etc/hosts"
+
+sed -i '/10.0.0.*/d' /etc/hosts
+
+echo -n "Setting up SSH keys on nodes... "
+for (( i=1; i<=$num_pis; i++ )); do
+    node_name="CompactCori$i"
+    num=$(($i+100))
+    ip=10.0.0..$num
+    echo $ip >> /home/$user_name/mpihostsfile
+
+    sh -c "echo \"$ip  pi$i\" >> /etc/hosts"
+    sshpass -p "$pass_phrase" scp -o StrictHostKeyChecking=no $user_name@$node_name:~/.ssh/id_rsa.pub tmp_key
+    cat tmp_key >> /home/$user_name/.ssh/authorized_keys
+done
+
+for (( i=1; i<=$num_nodes; i++ ))
+do
+    sshpass -p "$pass_phrase" scp -o StrictHostKeyChecking=no /home/$user_name/.ssh/authorized_keys $user_name@$node_name:~/.ssh/authorized_keys
+done
+
+echo "Done"
+
+rm tmp_key
+
+echo -n "Hardening sshd config... "
+
+# Disallow root SSH logins
+
+# Disallow keyboard-interactive logins
+
+echo "Done"
+
+#echo "Setting GPU memory to 128MB"
+#bash ./set_gpu.sh
+
+echo "Rebooting"
+reboot
