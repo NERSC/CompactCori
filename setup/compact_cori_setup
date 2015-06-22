@@ -34,7 +34,7 @@ error() {
 }
 
 usage() {
-    echo "USAGE: $PROG [-h ][-n node_number]"
+    echo "USAGE: $PROG -n node_number"
 }
 
 while getopts "hn:" OPTION; do
@@ -45,14 +45,15 @@ while getopts "hn:" OPTION; do
             ;;
         n)
             node_num="$OPTARG"
-            # Argument Sanitation
-            re='^[0-9]+$'
-            if ! [[ $node_num =~ $re ]] ; then
-                error "Invalid argument: please enter an integer after the -n flag"
-            fi
             ;;
     esac
 done
+
+# Argument Sanitation
+re='^[0-9]+$'
+if ! [[ $node_num =~ $re ]] ; then
+    error "Invalid argument: please enter an integer after the -n flag"
+fi
 
 node_name="CompactCori$node_num"
 
@@ -67,7 +68,11 @@ apt-get -y dist-upgrade
 echo "Installing vim mpich2 xboxdrv libglew-dev sshpass libav-tools tmux"
 apt-get -y install vim mpich2 xboxdrv libglew-dev sshpass libav-tools tmux
 
-echo "Setting network interface"
+echo -n "Creating backup copy of /etc/network/interfaces... "
+cp /etc/network/interfaces /etc/network/interfaces-backup
+echo "Done"
+
+echo -n "Setting network interface... "
 tee /etc/network/interfaces <<-EOF
 auto lo
 
@@ -88,10 +93,12 @@ broadcast 10.255.255.255
 # wpa-roam /etc/wpa_supplicant/wpa_supplicant.conf
 # iface default inet dhcp
 EOF
+echo "Done"
 
-echo "Generating SSH keys"
+echo -n "Generating SSH keys... "
 ssh-keygen -N '' -b 4096 -f /home/ccori/.ssh/id_rsa
+echo "Done"
 
-echo "Sleeping for 10 seconds and then rebooting: ctrl+c to postpone reboot... "
+echo "Sleeping for 10 seconds and then rebooting: ^C to postpone reboot... "
 sleep 10
 shutdown -r now
