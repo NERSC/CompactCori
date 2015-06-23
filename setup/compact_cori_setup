@@ -63,10 +63,10 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 echo "Running apt-get update and dist-upgrade"
-apt-get -y update
-apt-get -y dist-upgrade
+apt-get -y --force-yes update
+apt-get -y --force-yes dist-upgrade
 echo "Installing git pdsh vim mpich2 xboxdrv libglew-dev sshpass libav-tools tmux"
-apt-get -y install git pdsh vim mpich2 xboxdrv libglew-dev sshpass libav-tools tmux
+apt-get -y --force-yes install git pdsh vim mpich2 xboxdrv libglew-dev sshpass libav-tools tmux
 
 echo -n "Creating backup copy of /etc/network/interfaces... "
 cp /etc/network/interfaces /etc/network/interfaces-backup
@@ -80,7 +80,7 @@ iface lo inet loopback
 
 # iface eth0 inet dhcp
 
-auto eth0
+auto eth1
 iface eth0 inet static
 address 10.0.0.$(($node_num+100))
 gateway 10.0.0.1
