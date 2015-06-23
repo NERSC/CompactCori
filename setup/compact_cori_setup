@@ -25,6 +25,7 @@
 # YYYY-MM-DD INITIALS - DESCRIPTION
 # *****************************************************************************
 # 2015-06-19 NF       - Wrote initial script
+# 2015-06-23 NF       - Added pdsh to installed packages
 
 PROG=$(basename $0)
 
@@ -99,6 +100,6 @@ echo -n "Generating SSH keys... "
 ssh-keygen -N '' -b 4096 -f /home/ccori/.ssh/id_rsa
 echo "Done"
 
-echo "Sleeping for 10 seconds and then rebooting: ^C to postpone reboot... "
+echo "Sleeping for 10 seconds and then shutting down: ^C to postpone shutdown... "
 sleep 10
-shutdown -r now
+shutdown -h now

@@ -22,6 +22,7 @@
 # YYYY-MM-DD INITIALS - DESCRIPTION
 # *****************************************************************************
 # 2015-06-19 NF       - Wrote initial script
+# 2015-06-23 NF       - Added pdsh and root SSH key transfer
 
 PROG=$(basename $0)
 
