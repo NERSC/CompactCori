@@ -69,14 +69,18 @@ echo "Updating /etc/hosts"
 
 sed -i '/10.0.0.*/d' /etc/hosts
 
+echo -n "Setting up root SSH key... "
+ssh-keygen -N '' -b 8192 -f ~/.ssh/id_rsa
+echo "Done"
+
 echo -n "Setting up SSH keys on nodes... "
-for (( i=1; i<=$num_pis; i++ )); do
+for (( i=1; i<=$num_nodes; i++ )); do
     node_name="CompactCori$i"
     num=$(($i+100))
     ip=10.0.0..$num
     echo $ip >> /home/$user_name/mpihostsfile
 
-    sh -c "echo \"$ip  pi$i\" >> /etc/hosts"
+    sh -c "echo \"$ip  CompactCori$i\" >> /etc/hosts"
     sshpass -p "$pass_phrase" scp -o StrictHostKeyChecking=no $user_name@$node_name:~/.ssh/id_rsa.pub tmp_key
     cat tmp_key >> /home/$user_name/.ssh/authorized_keys
 done
@@ -102,6 +106,16 @@ sed "s/PermitRootLogin*/PermitRootLogin no/" /etc/ssh/sshd_config
 sed "s/PasswordAuthentication*/PasswordAuthentication no/" /etc/ssh/sshd_config
 
 echo "Done"
+
+echo -n "Setting up pdsh... "
+rm -f /etc/profile.d/pdsh.sh
+echo "export PDSH_RCMD_TYPE='ssh'" >> /etc/profile.d/pdsh.sh
+echo "export WCOLL='/etc/pdsh/machines'" >> /etc/profile.d/pdsh.sh
+
+rm -f /etc/pdsh/machines
+for (( i=1; i<=$num_nodes; i||)); do
+    echo "CompactCori$i" >> /etc/pdsh/machines
+done
 
 echo "Sleeping for 10 seconds and then rebooting: ^C to postpone reboot... "
 sleep 10
