@@ -23,7 +23,18 @@
 # *****************************************************************************
 # 2015-06-23 NF       - Wrote initial script
 
-for (( i=2; i<=$1; i++ )); do
+error() {
+    echo -e "ERROR: $*" >&2
+    return 0
+}
+
+usage() {
+    echo "USAGE: $PROG [num_nodes]"
+}
+
+test $# -ne 1 && error "too few arguments" && usage && exit 1
+
+for (( i=2; i<="$1"; i++ )); do
     echo -n "Shutting down pi$i... "
     ssh pi$i sudo shutdown -h now
     echo "Done"
