@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# shutdown - run shutdown -h now on all nodes of Tiny Titan
+#
+# Author: Nicholas Fong
+#         Lawrence Berkeley National Laboratory
+#         National Energy Research Scientific Computing Center
+#
+# Usage:  shutdown [num_nodes]
+#
+# Acknowledgment:
+#         This work was supported by the Director, Office of Science,
+#         Division of Mathematical, Information, and Computational
+#         Sciences of the U.S. Department of Energy under contract
+#         DE-AC02-05CH11231.
+#
+#         This research used resources of the National Energy Research
+#         Scientific Computing Center, which is supported by the Office
+#         of Science of the U.S. Department of Energy.
+#
+# Update History:
+# YYYY-MM-DD INITIALS - DESCRIPTION
+# *****************************************************************************
+# 2015-06-23 NF       - Wrote initial script
+
+for i in {2..$1}; do
+    echo -n "Shutting down pi$i... "
+    ssh pi$i sudo shutdown -h now
+    echo "Done"
+done
+sleep 3
+
+echo "Master node going down... "
+sleep 3
+sudo shutdown -h now
