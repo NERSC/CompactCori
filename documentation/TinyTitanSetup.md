@@ -26,7 +26,10 @@
 1. Clone the PiBrot repository hosted on the [TinyTitan GitHub Project
    Page](https://github.com/TinyTitan/PiBrot/).
 1. `cd` into the PiBrot directory and edit the `Makefile` to include the `-lm`
-   argument after the `` command.
+   argument to `CCFLAGS`
+1. Edit the `Makefile` to use the `-f ~/.mpihostsfile` argument instead of
+   of IP addresses for the mpirun command.  For example, `mpirun -f
+   /home/pi/pi_mpihostsfile -n 9 /home/pi/pibrot`
 1. run `make` followed by `make run`
 
 #### Run SPH
