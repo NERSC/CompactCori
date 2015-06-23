@@ -56,7 +56,12 @@ done
 # Argument Sanitation
 re='^[0-9]+$'
 if ! [[ $num_nodes =~ $re ]] ; then
-    error "Invalid argument: please enter an integer after the -n flag"
+    error "Invalid argument: please enter an integer after the -n flag" && usage
+fi
+
+if [[ -z $user_name ]] || [[ -z $pass_phrase]]
+then
+    error "Username and password are required arguments" && usage
 fi
 
 echo "Removing ~/mpihostsfile"
