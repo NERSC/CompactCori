@@ -86,20 +86,23 @@ do
     sshpass -p "$pass_phrase" scp -o StrictHostKeyChecking=no /home/$user_name/.ssh/authorized_keys $user_name@$node_name:~/.ssh/authorized_keys
 done
 
-echo "Done"
-
 rm tmp_key
+
+echo "Done"
 
 echo -n "Hardening sshd config... "
 
+# Ensure Public Key Auth is enabled
+sed "s/PubkeyAuthentication*/PubkeyAuthentication no/" /etc/ssh/sshd_config
+
 # Disallow root SSH logins
+sed "s/PermitRootLogin*/PermitRootLogin no/" /etc/ssh/sshd_config
 
 # Disallow keyboard-interactive logins
+sed "s/PasswordAuthentication*/PasswordAuthentication no/" /etc/ssh/sshd_config
 
 echo "Done"
 
-#echo "Setting GPU memory to 128MB"
-#bash ./set_gpu.sh
-
-echo "Rebooting"
-reboot
+echo "Sleeping for 10 seconds and then rebooting: ^C to postpone reboot... "
+sleep 10
+shutdown -r now
