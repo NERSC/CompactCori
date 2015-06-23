@@ -23,7 +23,7 @@
 # *****************************************************************************
 # 2015-06-23 NF       - Wrote initial script
 
-for i in {2..$1}; do
+for (( i=2; i<=$1; i++ )); do
     echo -n "Shutting down pi$i... "
     ssh pi$i sudo shutdown -h now
     echo "Done"
