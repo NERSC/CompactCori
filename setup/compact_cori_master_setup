@@ -70,10 +70,10 @@ echo "Updating /etc/hosts"
 sed -i '/10.0.0.*/d' /etc/hosts
 
 echo -n "Setting up root SSH key... "
-ssh-keygen -N '' -b 8192 -f ~/.ssh/id_rsa
+ssh-keygen -N '' -b 8192 -f /root/.ssh/id_rsa
 echo "Done"
 
-echo -n "Setting up SSH keys on nodes... "
+echo -n "Setting up SSH keys on nodes... you will need to enter the root password for each node to copy over the root SSH key"
 for (( i=1; i<=$num_nodes; i++ )); do
     node_name="CompactCori$i"
     num=$(($i+100))
@@ -85,9 +85,9 @@ for (( i=1; i<=$num_nodes; i++ )); do
     cat tmp_key >> /home/$user_name/.ssh/authorized_keys
 done
 
-for (( i=1; i<=$num_nodes; i++ ))
-do
+for (( i=1; i<=$num_nodes; i++ )); do
     sshpass -p "$pass_phrase" scp -o StrictHostKeyChecking=no /home/$user_name/.ssh/authorized_keys $user_name@$node_name:~/.ssh/authorized_keys
+    ssh-copy-id -i /root/id_rsa.pub root@$node_name
 done
 
 rm tmp_key
