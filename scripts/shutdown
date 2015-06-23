@@ -25,14 +25,14 @@
 
 error() {
     echo -e "ERROR: $*" >&2
-    return 0
+    exit 1
 }
 
 usage() {
     echo "USAGE: $PROG [num_nodes]"
 }
 
-test $# -ne 1 && error "too few arguments" && usage && exit 1
+test $# -ne 1 && error "too few arguments" && usage
 
 for (( i=2; i<="$1"; i++ )); do
     echo -n "Shutting down pi$i... "
