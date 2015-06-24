@@ -23,6 +23,7 @@
 # *****************************************************************************
 # 2015-06-19 NF       - Wrote initial script
 # 2015-06-23 NF       - Added pdsh and root SSH key transfer
+# 2015-06-24 NF       - Minor bugfixes and greater verbosity
 
 PROG=$(basename $0)
 
@@ -79,20 +80,28 @@ echo -n "Setting up root SSH key... "
 ssh-keygen -N '' -b 8192 -f /root/.ssh/id_rsa
 echo "Done"
 
-echo -n "Setting up SSH keys on nodes... you will need to enter the root password for each node to copy over the root SSH key"
 for (( i=1; i<=$num_nodes; i++ )); do
     node_name="CompactCori$i"
     num=$(($i+100))
     ip=10.0.0.$num
-    echo $ip >> /home/$user_name/mpihostsfile
+    echo -n "Adding $node_name to mpihostsfile and /etc/hosts... "
+    echo "$ip" >> /home/$user_name/mpihostsfile
+    echo "$ip  CompactCori$i" >> /etc/hosts
+    echo "Done"
 
-    sh -c "echo \"$ip  CompactCori$i\" >> /etc/hosts"
+    echo -n "Getting remote public key and adding to authorized keys... "
     sshpass -p "$pass_phrase" scp -o StrictHostKeyChecking=no $user_name@$node_name:~/.ssh/id_rsa.pub tmp_key
     cat tmp_key >> /home/$user_name/.ssh/authorized_keys
+    echo "Done"
 done
 
 for (( i=1; i<=$num_nodes; i++ )); do
+    node_name="CompactCori$i"
+    echo -n "Copying authorized_keys to $node_name... "
     sshpass -p "$pass_phrase" scp -o StrictHostKeyChecking=no /home/$user_name/.ssh/authorized_keys $user_name@$node_name:~/.ssh/authorized_keys
+    echo "Done"
+
+    echo "Copying root SSH key to $node_name (you will need to enter the root password for $node_name..."
     ssh-copy-id -i /root/id_rsa.pub root@$node_name
 done
 
@@ -119,7 +128,7 @@ echo "export PDSH_RCMD_TYPE='ssh'" >> /etc/profile.d/pdsh.sh
 echo "export WCOLL='/etc/pdsh/machines'" >> /etc/profile.d/pdsh.sh
 
 rm -f /etc/pdsh/machines
-for (( i=1; i<=$num_nodes; i||)); do
+for (( i=1; i<=$num_nodes; i++ )); do
     echo "CompactCori$i" >> /etc/pdsh/machines
 done
 
