@@ -83,7 +83,7 @@ echo -n "Setting up SSH keys on nodes... you will need to enter the root passwor
 for (( i=1; i<=$num_nodes; i++ )); do
     node_name="CompactCori$i"
     num=$(($i+100))
-    ip=10.0.0..$num
+    ip=10.0.0.$num
     echo $ip >> /home/$user_name/mpihostsfile
 
     sh -c "echo \"$ip  CompactCori$i\" >> /etc/hosts"
