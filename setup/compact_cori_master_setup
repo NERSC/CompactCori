@@ -24,6 +24,7 @@
 # 2015-06-19 NF       - Wrote initial script
 # 2015-06-23 NF       - Added pdsh and root SSH key transfer
 # 2015-06-24 NF       - Minor bugfixes and greater verbosity
+# 2015-06-26 NF       - Fix sed commands for sshd config
 
 PROG=$(basename $0)
 
@@ -56,12 +57,11 @@ done
 
 # Argument Sanitation
 re='^[0-9]+$'
-if ! [[ $num_nodes =~ $re ]] ; then
+if ! [[ $num_nodes =~ $re ]]; then
     error "Invalid argument: please enter an integer after the -n flag" && usage
 fi
 
-if [[ -z $user_name ]] || [[ -z $pass_phrase]]
-then
+if [[ -z $user_name ]] || [[ -z $pass_phrase]]; then
     error "Username and password are required arguments" && usage
 fi
 
@@ -112,13 +112,13 @@ echo "Done"
 echo -n "Hardening sshd config... "
 
 # Ensure Public Key Auth is enabled
-sed "s/PubkeyAuthentication*/PubkeyAuthentication no/" /etc/ssh/sshd_config
+sed "s/PubkeyAuthentication yes/PubkeyAuthentication no/" /etc/ssh/sshd_config
 
 # Disallow root SSH logins
-sed "s/PermitRootLogin*/PermitRootLogin no/" /etc/ssh/sshd_config
+sed "s/PermitRootLogin yes/PermitRootLogin no/" /etc/ssh/sshd_config
 
 # Disallow keyboard-interactive logins
-sed "s/PasswordAuthentication*/PasswordAuthentication no/" /etc/ssh/sshd_config
+sed "s/PasswordAuthentication yes/PasswordAuthentication no/" /etc/ssh/sshd_config
 
 echo "Done"
 
