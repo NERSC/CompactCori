@@ -6,7 +6,7 @@
 #         Lawrence Berkeley National Laboratory
 #         National Energy Research Scientific Computing Center
 #
-# Usage:  compact_cori_master_setup -u username -p passphrase -n num_nodesber
+# Usage:  compact_cori_master_setup -u username -p passphrase -n num_nodes
 #
 # Acknowledgment:
 #         This work was supported by the Director, Office of Science,
@@ -80,7 +80,7 @@ echo -n "Setting up root SSH key... "
 ssh-keygen -N '' -b 8192 -f /root/.ssh/id_rsa
 echo "Done"
 
-for (( i=1; i<=$num_nodes; i++ )); do
+for (( i=2; i<=$num_nodes; i++ )); do
     node_name="CompactCori$i"
     num=$(($i+100))
     ip=10.0.0.$num
@@ -95,7 +95,7 @@ for (( i=1; i<=$num_nodes; i++ )); do
     echo "Done"
 done
 
-for (( i=1; i<=$num_nodes; i++ )); do
+for (( i=2; i<=$num_nodes; i++ )); do
     node_name="CompactCori$i"
     echo -n "Copying authorized_keys to $node_name... "
     sshpass -p "$pass_phrase" scp -o StrictHostKeyChecking=no /home/$user_name/.ssh/authorized_keys $user_name@$node_name:~/.ssh/authorized_keys
@@ -131,6 +131,8 @@ rm -f /etc/pdsh/machines
 for (( i=1; i<=$num_nodes; i++ )); do
     echo "CompactCori$i" >> /etc/pdsh/machines
 done
+
+echo "Done"
 
 echo "Sleeping for 10 seconds and then rebooting: ^C to postpone reboot... "
 sleep 10
