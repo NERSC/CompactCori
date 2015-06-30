@@ -6,7 +6,7 @@
 #         Lawrence Berkeley National Laboratory
 #         National Energy Research Scientific Computing Center
 #
-# Usage:  compact_cori_master_setup -u username -p passphrase -n num_nodes
+# Usage:  compact_cori_master_setup -u username -n num_nodes
 #
 # Acknowledgment:
 #         This work was supported by the Director, Office of Science,
@@ -35,7 +35,7 @@ error() {
 }
 
 usage() {
-    echo "USAGE: $PROG -u username -p passphrase -n num_nodes"
+    echo "USAGE: $PROG -u username -n num_nodes"
 }
 
 while getopts "hn:u:p:" OPTION; do
@@ -50,9 +50,6 @@ while getopts "hn:u:p:" OPTION; do
         u)
             user_name="$OPTARG"
             ;;
-        p)
-            pass_phrase="$OPTARG"
-            ;;
     esac
 done
 
@@ -62,8 +59,15 @@ if ! [[ $num_nodes =~ $re ]]; then
     error "Invalid argument: please enter an integer after the -n flag" && usage
 fi
 
-if [[ -z $user_name ]] || [[ -z $pass_phrase ]]; then
-    error "Username and password are required arguments" && usage
+if [[ -z $user_name ]]; then
+    error "Username is a required argument" && usage
+fi
+
+echo "Enter the passphrase for $user_name followed by [return]:"
+read pass_phrase
+
+if [[ -z $pass_phrase ]]; then
+    error "Please enter the password for $user_name when prompted.  Aborting." && usage
 fi
 
 echo "Removing ~/mpihostsfile"
@@ -103,8 +107,14 @@ for (( i=2; i<=$num_nodes; i++ )); do
     sshpass -p "$pass_phrase" scp -o StrictHostKeyChecking=no /home/$user_name/.ssh/authorized_keys $user_name@$node_name:~/.ssh/authorized_keys
     echo "Done"
 
-#    echo "Copying root SSH key to $node_name (you will need to enter the root password for $node_name..."
-#    ssh-copy-id -i /root/.ssh/id_rsa.pub root@$node_name
+#echo "Enter the root passphrase followed by [return]:"
+#read root_pass_phrase
+#
+#if [[ -z $root_pass_phrase ]]; then
+#    error "Please enter the root password when prompted.  Aborting."
+#fi
+#    echo "Copying root SSH key to $node_name..."
+#    sshpass -p "$root_pass_phrase" scp -o StrictHostKeyChecking=no /root/.ssh/id_rsa.pub root@$node_name:/root/.ssh/authorized_keys
 done
 
 chown $user_name:$user_name /home/$user_name/mpihostsfile
