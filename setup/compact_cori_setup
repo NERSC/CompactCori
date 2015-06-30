@@ -74,8 +74,8 @@ fi
 echo "Running apt-get update and dist-upgrade"
 apt-get -y --force-yes update
 apt-get -y --force-yes dist-upgrade
-echo "Installing git pdsh vim mpich2 xboxdrv libglew-dev sshpass libav-tools tmux"
-apt-get -y --force-yes install git pdsh vim mpich2 xboxdrv libglew-dev sshpass libav-tools tmux
+echo "Installing git pdsh vim mpich2 xboxdrv libglew-dev sshpass libav-tools tmux python-mpi4py"
+apt-get -y --force-yes install git pdsh vim mpich2 xboxdrv libglew-dev sshpass libav-tools tmux python-mpi4py
 
 echo -n "Creating backup copy of /etc/network/interfaces... "
 cp /etc/network/interfaces /etc/network/interfaces-backup
