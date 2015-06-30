@@ -92,6 +92,7 @@ for (( i=2; i<=$num_nodes; i++ )); do
     echo -n "Getting remote public key and adding to authorized keys... "
     sshpass -p "$pass_phrase" scp -o StrictHostKeyChecking=no $user_name@$node_name:~/.ssh/id_rsa.pub tmp_key
     cat tmp_key >> /home/$user_name/.ssh/authorized_keys
+    chown $user_name /home/$user_name/.ssh/authorized_keys
     echo "Done"
 done
 
@@ -102,9 +103,10 @@ for (( i=2; i<=$num_nodes; i++ )); do
     echo "Done"
 
     echo "Copying root SSH key to $node_name (you will need to enter the root password for $node_name..."
-    ssh-copy-id -i /root/id_rsa.pub root@$node_name
+    ssh-copy-id -i /root/.ssh/id_rsa.pub root@$node_name
 done
 
+chown $user_name /home/$user_name/mpihostsfile
 rm tmp_key
 
 echo "Done"
