@@ -102,8 +102,8 @@ for (( i=2; i<=$num_nodes; i++ )); do
     sshpass -p "$pass_phrase" scp -o StrictHostKeyChecking=no /home/$user_name/.ssh/authorized_keys $user_name@$node_name:~/.ssh/authorized_keys
     echo "Done"
 
-    echo "Copying root SSH key to $node_name (you will need to enter the root password for $node_name..."
-    ssh-copy-id -i /root/.ssh/id_rsa.pub root@$node_name
+#    echo "Copying root SSH key to $node_name (you will need to enter the root password for $node_name..."
+#    ssh-copy-id -i /root/.ssh/id_rsa.pub root@$node_name
 done
 
 chown $user_name /home/$user_name/mpihostsfile
