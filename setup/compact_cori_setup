@@ -26,6 +26,7 @@
 # *****************************************************************************
 # 2015-06-19 NF       - Wrote initial script
 # 2015-06-23 NF       - Added pdsh to installed packages
+# 2015-06-30 NF       - Add chown for SSH keys
 
 PROG=$(basename $0)
 
@@ -35,7 +36,7 @@ error() {
 }
 
 usage() {
-    echo "USAGE: $PROG -n node_number"
+    echo "USAGE: $PROG -n node_number -u user_name"
 }
 
 while getopts "hn:" OPTION; do
@@ -43,6 +44,9 @@ while getopts "hn:" OPTION; do
         h)
             usage
             exit 0
+            ;;
+        u)
+            user_name="$OPTARG"
             ;;
         n)
             node_num="$OPTARG"
@@ -54,6 +58,10 @@ done
 re='^[0-9]+$'
 if ! [[ $node_num =~ $re ]] ; then
     error "Invalid argument: please enter an integer after the -n flag"
+fi
+
+if [[ -z $user_name ]]; then
+    error "Username is a required argument" && usage
 fi
 
 node_name="CompactCori$node_num"
@@ -97,7 +105,8 @@ EOF
 echo "Done"
 
 echo -n "Generating SSH keys... "
-ssh-keygen -N '' -b 4096 -f /home/ccori/.ssh/id_rsa
+ssh-keygen -N '' -b 4096 -f /home/$user_name/.ssh/id_rsa
+chown $user_name:$user_name /home/$user_name/.ssh/*
 echo "Done"
 
 echo "Sleeping for 10 seconds and then shutting down: ^C to postpone shutdown... "
