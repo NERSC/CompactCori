@@ -26,6 +26,7 @@
 # 2015-06-24 NF       - Minor bugfixes and greater verbosity
 # 2015-06-26 NF       - Fix sed commands for sshd config
 # 2015-06-30 NF       - Add chown
+# 2015-07-01 NF       - Add apt proxying
 
 PROG=$(basename $0)
 
@@ -69,6 +70,9 @@ read pass_phrase
 if [[ -z $pass_phrase ]]; then
     error "Please enter the password for $user_name when prompted.  Aborting." && usage
 fi
+
+echo -n "Setting up apt-cacher-ng..."
+apt-get -y --force-yes install apt-cacher-ng
 
 echo "Removing ~/mpihostsfile"
 rm -f /home/$user_name/mpihostsfile
@@ -141,7 +145,7 @@ echo "export PDSH_RCMD_TYPE='ssh'" >> /etc/profile.d/pdsh.sh
 echo "export WCOLL='/etc/pdsh/machines'" >> /etc/profile.d/pdsh.sh
 
 rm -f /etc/pdsh/machines
-for (( i=1; i<=$num_nodes; i++ )); do
+for (( i=2; i<=$num_nodes; i++ )); do
     echo "CompactCori$i" >> /etc/pdsh/machines
 done
 
