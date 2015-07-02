@@ -1,0 +1,119 @@
+#!/bin/bash
+#
+# compact_cori_setup: set up a node in the Compact Cori cluster.  Assumes a
+#                     clean Debian install, that each node is named
+#                     CompactCori[i] for some integer i, and that this script is
+#                     run as root
+#
+# Author: Nicholas Fong
+#         Lawrence Berkeley National Laboratory
+#         National Energy Research Scientific Computing Center
+#
+# Usage:  compact_cori_setup [-h ][-n node_number]
+#
+# Acknowledgment:
+#         This work was supported by the Director, Office of Science,
+#         Division of Mathematical, Information, and Computational
+#         Sciences of the U.S. Department of Energy under contract
+#         DE-AC02-05CH11231.
+#
+#         This research used resources of the National Energy Research
+#         Scientific Computing Center, which is supported by the Office
+#         of Science of the U.S. Department of Energy.
+#
+# Update History:
+# YYYY-MM-DD INITIALS - DESCRIPTION
+# *****************************************************************************
+# 2015-06-19 NF       - Wrote initial script
+# 2015-06-23 NF       - Added pdsh to installed packages
+# 2015-06-30 NF       - Add chown for SSH keys
+# 2015-07-01 NF       - Add apt proxy
+
+PROG=$(basename $0)
+
+error() {
+    echo -e "ERROR: $*" >&2
+    exit 1
+}
+
+usage() {
+    echo "USAGE: $PROG -n node_number -u user_name"
+}
+
+while getopts "hn:" OPTION; do
+    case $OPTION in
+        h)
+            usage
+            exit 0
+            ;;
+        u)
+            user_name="$OPTARG"
+            ;;
+        n)
+            node_num="$OPTARG"
+            ;;
+    esac
+done
+
+# Argument Sanitation
+re='^[0-9]+$'
+if ! [[ $node_num =~ $re ]] ; then
+    error "Invalid argument: please enter an integer after the -n flag"
+fi
+
+if [[ -z $user_name ]]; then
+    error "Username is a required argument" && usage
+fi
+
+node_name="CompactCori$node_num"
+
+# Ensure this script is being run as root
+if [[ $EUID -ne 0 ]]; then
+   error "This script must be run as root"
+fi
+
+echo "Running apt-get update and dist-upgrade"
+apt-get -y --force-yes update
+apt-get -y --force-yes dist-upgrade
+echo "Installing git pdsh vim mpich2 xboxdrv libglew-dev sshpass libav-tools tmux python-mpi4py ntp"
+apt-get -y --force-yes install git pdsh vim mpich2 xboxdrv libglew-dev sshpass libav-tools tmux python-mpi4py ntp
+
+echo -n "Creating backup copy of /etc/network/interfaces... "
+cp /etc/network/interfaces /etc/network/interfaces-backup
+echo "Done"
+
+echo -n "Setting network interface... "
+tee /etc/network/interfaces <<-EOF
+auto lo
+
+iface lo inet loopback
+
+# iface eth0 inet dhcp
+
+auto eth1
+iface eth1 inet static
+address 10.0.0.$(($node_num+100))
+#gateway 10.0.0.1
+netmask 255.0.0.0
+network 10.0.0.0
+broadcast 10.255.255.255
+
+# allow-hotplug wlan0
+# iface wlan0 inet manual
+# wpa-roam /etc/wpa_supplicant/wpa_supplicant.conf
+# iface default inet dhcp
+EOF
+echo "Done"
+
+echo -n "Generating SSH keys... "
+ssh-keygen -N '' -b 4096 -f /home/$user_name/.ssh/id_rsa
+chown $user_name:$user_name /home/$user_name/.ssh/*
+echo "Done"
+
+echo -n "Setting up apt proxy... "
+echo 'Acquire::http { Proxy "http://10.0.0.101:3142"; }' > /etc/apt/apt.conf
+echo "Done"
+
+echo "Sleeping for 10 seconds and then shutting down: ^C to postpone shutdown... "
+sleep 10
+shutdown -h now
