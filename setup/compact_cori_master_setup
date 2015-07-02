@@ -126,19 +126,6 @@ rm tmp_key
 
 echo "Done"
 
-echo -n "Hardening sshd config... "
-
-# Ensure Public Key Auth is enabled
-sed "s/PubkeyAuthentication yes/PubkeyAuthentication no/" /etc/ssh/sshd_config
-
-# Disallow root SSH logins
-sed "s/PermitRootLogin yes/PermitRootLogin no/" /etc/ssh/sshd_config
-
-# Disallow keyboard-interactive logins
-sed "s/PasswordAuthentication yes/PasswordAuthentication no/" /etc/ssh/sshd_config
-
-echo "Done"
-
 echo -n "Setting up pdsh... "
 rm -f /etc/profile.d/pdsh.sh
 echo "export PDSH_RCMD_TYPE='ssh'" >> /etc/profile.d/pdsh.sh
