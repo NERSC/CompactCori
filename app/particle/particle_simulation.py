@@ -11,7 +11,7 @@ Threads in mpi4py are 0-indexed
 import argparse
 import random
 import math
-import numpy as np              # Needed for mpi4py
+import numpy as np
 from mpi4py import MPI as mpi
 
 comm = mpi.COMM_WORLD
@@ -34,8 +34,6 @@ parser.add_argument("-d", "--dt", type=float,
         help = "multiplier time constant")
 parser.add_argument("-a", "--ascii", action="store_true",
         help = "output ascii of simulation to STDOUT")
-parser.add_argument("-w", "--workers", type=int,
-        help = "number of workers to expect for parallel simulation")
 parser.add_argument("-s", "--serial", action="store_true",
         help = "specifies if simulation should be run serially")
 
@@ -49,8 +47,6 @@ simulation_width = args.width if args.width else 1000
 force_constant = args.force if args.force else 1
 dt = args.dt if args.dt else 0.0005
 ascii = True if args.ascii else False
-workers = args.ascii if args.ascii else 8
-serial = True if args.serial else False                             # Possible race condition with multiple workers but serial job
 
 particles = []
 
@@ -172,7 +168,7 @@ class Particle:
 
 # Create Partitions and set neighbors
 partitions = []
-for i in range(workers):
+for i in range(num_threads):
     partitions.append(Partition(i))
 
 # Create Particles for Parallel Processes
