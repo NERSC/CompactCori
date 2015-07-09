@@ -11,12 +11,12 @@ Threads in mpi4py are 0-indexed
 import argparse
 import random
 import math
-import tkinter as tk            # Graphics
 import numpy as np              # Needed for mpi4py
 from mpi4py import MPI as mpi
 
 comm = mpi.COMM_WORLD
 rank = comm.Get_rank()
+num_threads = comm.Get_size()
 
 # Parse arguments
 parser = argparse.ArgumentParser()
@@ -70,28 +70,45 @@ def validate_dict(*args):
         if type(arg) is not dict:
             raise ArgumentError("incorrect type argument: " + type(arg) + " was passed instead of a dict")
 
+def validate_particle_set(*args):
+    for arg in args:
+        if type(arg) is not set:
+            raise ArgumentError("incorrect type argument: " + type(arg) + " was passed instead of a set")
+        for obj in arg:
+            if type(obj) is not Particle:
+                raise ArgumentError("Non-particle type in set; received a " + type(obj) + " instead of a Particle"
+
 class Partition:
     """
     neighbor_threads is a dictionary where the key is an integer corresponding
     to the 0-indexed thread number of the neighbor thread and the value is a
     list of all particles in that neighboring location
     """
-    def __init__(self, thread_num, particles):
+    def __init__(self, thread_num):
         validate_int(thread_num)
         self.thread_num = thread_num
+        self.delta_x = simulation_width//num_threads
+        self.start_x = self.delta_x*self.thread_num
+        self.end_x = self.start_x + delta_x
+        self.active = True
 
-    def set_neighbor_threads(neighbor_threads):
-        validate_dict(neighbor_threads)
-        self.neighbor_threads = neighbor_threads
+    def update_neighbor_thread_list():
+        num_neighbor_partitions = math.ceil(interaction_radius/self.delta_x)
+        lower_threads = [ i for i in range(self.thread_num - num_neighbor_partitions, self.thread_num)]
+        upper_threads = [ i for i in range(self.thread_num + 1, self.thread_num + num_neighbor_partitions + 1)]
+        self.neighbor_threads = lower_threads + upper_threads
 
-    def set_particles(self, new_particles):
-        validate_list(new_particles)
-        self.particles = new_particles
+    def add_particles(particle_set):
+        validate_particle_set(particle_set)
+        self.particles.union(particle_set)
 
-    def set_neighbor_particles(self, neighbor_thread_num, new_particles):
-        validate_int(neighbor_thread_num)
-        validate_list(new_particles)
-        self.neighbor_threads[neighbor_thread_num] = new_particles
+    def remove_particles(particle_set):
+        validate_particle_set(particle_set)
+        self.particles.difference_update(particle_set)
+
+    def set_particles(particle_set):
+        validate_particle_set(particle_set)
+        self.particles = particle_set
 
 class Particle:
     static_particles = particles
@@ -163,8 +180,6 @@ partitions = []
 for i in range(workers):
     partitions.append(Partition(i))
 
-
-
 # Create Particles for Parallel Processes
 for _ in range(num_particles):
     curr_particle = Particle()
@@ -202,10 +217,11 @@ def timestep():
     for particle in particles:
         particle.move_particle()
 
-# Run simulation
-#while True:
-for i in range(300):
-    timestep()
-    if ascii:
-        text_simulation()
+def main():
+    for i in range(300):
+        timestep()
+        if ascii:
+            text_simulation()
 
+if __name__ == "__main__":
+    main()
