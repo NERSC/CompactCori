@@ -79,11 +79,6 @@ def validate_particle_set(*args):
                 raise ArgumentError("Non-particle type in set; received a " + type(obj) + " instead of a Particle"
 
 class Partition:
-    """
-    neighbor_threads is a dictionary where the key is an integer corresponding
-    to the 0-indexed thread number of the neighbor thread and the value is a
-    list of all particles in that neighboring location
-    """
     def __init__(self, thread_num):
         validate_int(thread_num)
         self.thread_num = thread_num
@@ -94,8 +89,8 @@ class Partition:
 
     def update_neighbor_thread_list():
         num_neighbor_partitions = math.ceil(interaction_radius/self.delta_x)
-        lower_threads = [ i for i in range(self.thread_num - num_neighbor_partitions, self.thread_num)]
-        upper_threads = [ i for i in range(self.thread_num + 1, self.thread_num + num_neighbor_partitions + 1)]
+        lower_threads = [ i for i in range(max(0,self.thread_num - num_neighbor_partitions), self.thread_num)]
+        upper_threads = [ i for i in range(self.thread_num + 1, min(self.thread_num + num_neighbor_partitions + 1, num_threads)]
         self.neighbor_threads = lower_threads + upper_threads
 
     def add_particles(particle_set):
