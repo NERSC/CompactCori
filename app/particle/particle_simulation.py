@@ -166,6 +166,16 @@ class Particle:
         else:
             return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(self.neighbors) + " neighbors\n"
 
+def disable_partition(partition):
+    if type(partition) is not Partition:
+        raise TypeError("A " + type(partition) + " was passed to disable_partition")
+    partition.active = False
+
+def enable_partition(partition):
+    if type(partition) is not Partition:
+        raise TypeError("A " + type(partition) + " was passed to disable_partition")
+    partition.active = True
+
 # Create Partitions and set neighbors
 partitions = []
 for i in range(num_threads):
