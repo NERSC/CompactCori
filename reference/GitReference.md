@@ -16,7 +16,7 @@ You should never make changes directly on the `master` branch.  All changes
 should be done on a separate branch from master ( unless you have some
 compelling reason to branch off of a branch that's not master).  Remember that
 the work on master is considered production -- that is, that there aren't bugs
-or issues with it.  This is called "branch per feature" in agine software
+or issues with it.  This is called "branch per feature" in agile software
 engineering.
 
 1. First, make sure you're on the master branch using `git status`.
@@ -54,6 +54,31 @@ engineering.
    if you need help)
 4. Run `git push origin [branchname]` to push your changes to GitHub so everyone
    else can see your work
+
+#### Reverting One File
+At some point, you may find that you need to revert one file to a previous
+version that you committed.  This is trivial in Git.
+
+1. Look up the SHA1 sum of the commit you want to revert the file to.  You can
+   use `git log [path/to/file]`, replacing `[path/to/file]` with the path to the
+   file you want to revert
+1. Checkout the file to that version by running `git checkout [SHA1-sum]
+   [path/to/file]`, replacing `[SHA1-sum]` with the respective SHA1 sum you
+   found in the first step and replacing `[path/to/file]` with the path to the
+   file you want to revert
+1. Commit the change, following the commit instructions above
+
+#### Reverting All Files
+If you make major changes to files tracked by Git that completely breaks what
+you're working on, you can safely revert the repository back to a previously
+committed state.  Note that when you do this, you lose history, so you **cannot
+undo this** and you **will lose any changes you've made since the commit you're
+reverting to**.  If you're sure you want to revert repository:
+
+1. Look up the SHA1 sum of the commit you want to revert the file to.  You can
+   use `git log` to do this.
+1. run `git reset --hard [SHA1-sum]`, replacing `[SHA1-sum]` with the respective
+   SHA1 sum you found in the first step
 
 #### Updating to Upstream and Opening a Pull Request
 Before you create a Pull Request to merge your code back into the NERSC Git
