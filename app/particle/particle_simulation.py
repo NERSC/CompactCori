@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-A parallelized MD simulation in Python written for version 1 of the Compact Cory
+A parallelized MD simulation in Python written for version 1 of the Compact Cori
 project at NERSC.
 
 This runs in O(n^2) time since all particles are compared to one another when
@@ -57,25 +57,30 @@ particles = []
 def validate_int(*args):
     for arg in args:
         if type(arg) is not int:
-            raise ArgumentError("incorrect type argument: " + type(arg) + " was passed instead of an int")
+            raise ArgumentError("incorrect type argument: " + type(arg) +
+                    " was passed instead of an int")
 
 def validate_list(*args):
     for arg in args:
         if type(arg) is not list:
-            raise ArgumentError("incorrect type argument: " + type(arg) + " was passed instead of a list")
+            raise ArgumentError("incorrect type argument: " + type(arg) +
+                    " was passed instead of a list")
 
 def validate_dict(*args):
     for arg in args:
         if type(arg) is not dict:
-            raise ArgumentError("incorrect type argument: " + type(arg) + " was passed instead of a dict")
+            raise ArgumentError("incorrect type argument: " + type(arg) +
+                    " was passed instead of a dict")
 
 def validate_particle_set(*args):
     for arg in args:
         if type(arg) is not set:
-            raise ArgumentError("incorrect type argument: " + type(arg) + " was passed instead of a set")
+            raise ArgumentError("incorrect type argument: " + type(arg) +
+                    " was passed instead of a set")
         for obj in arg:
             if type(obj) is not Particle:
-                raise ArgumentError("Non-particle type in set; received a " + type(obj) + " instead of a Particle")
+                raise ArgumentError("Non-particle type in set; received a "
+                        + type(obj) + " instead of a Particle")
 
 class Partition:
     def __init__(self, thread_num):
@@ -88,8 +93,10 @@ class Partition:
 
     def update_neighbor_thread_list():
         num_neighbor_partitions = math.ceil(interaction_radius/self.delta_x)
-        lower_threads = [ i for i in range(max(0,self.thread_num - num_neighbor_partitions), self.thread_num)]
-        upper_threads = [ i for i in range(self.thread_num + 1, min(self.thread_num + num_neighbor_partitions + 1, num_threads)]
+        lower_threads = [ i for i in range(max(0,self.thread_num -
+            num_neighbor_partitions), self.thread_num)]
+        upper_threads = [ i for i in range(self.thread_num + 1,
+            min(self.thread_num + num_neighbor_partitions + 1, num_threads)]
         self.neighbor_threads = lower_threads + upper_threads
 
     def add_particles(particle_set):
@@ -106,11 +113,16 @@ class Partition:
 
 class Particle:
     static_particles = particles
-    def __init__(self, thread_num = 0, x_position = None, y_position = None, x_velocity = 0, y_velocity = 0, mass = 1):
-        self.x_position = x_position if (x_position != None) else random.randint(0, simulation_width - 1)
-        self.y_position = y_position if (y_position != None) else random.randint(0, simulation_height - 1)
-        self.x_velocity = x_velocity if (x_velocity != None) else random.randint(-1*simulation_height//10, simulation_height//10)
-        self.y_velocity = y_velocity if (y_velocity != None) else random.randint(-1*simulation_height//10, simulation_height//10)
+    def __init__(self, thread_num = 0, x_position = None, y_position = None,
+        x_velocity = 0, y_velocity = 0, mass = 1):
+        self.x_position = x_position if (x_position != None)\
+            else random.randint(0, simulation_width - 1)
+        self.y_position = y_position if (y_position != None)\
+            else random.randint(0, simulation_height - 1)
+        self.x_velocity = x_velocity if (x_velocity != None)\
+            else random.randint(-1*simulation_height//10, simulation_height//10)
+        self.y_velocity = y_velocity if (y_velocity != None)\
+            else random.randint(-1*simulation_height//10, simulation_height//10)
         self.mass = mass
         self.neighbors = None
         self.x_accel = 0    # rm
@@ -153,21 +165,27 @@ class Particle:
         self.y_position += self.y_velocity * dt
 
         while self.x_position < 0 or self.x_position > simulation_width:
-            self.x_position = self.x_position*-1 if self.x_position < 0 else 2*simulation_width - self.x_position
             self.x_velocity *= -1
+            self.x_position = self.x_position*-1 if self.x_position < 0\
+                else 2*simulation_width - self.x_position
 
         while self.y_position < 0 or self.y_position > simulation_height:
-            self.y_position = self.y_position*-1 if self.y_position < 0 else 2*simulation_height - self.y_position
             self.y_velocity *= -1
+            self.y_position = self.y_position*-1 if self.y_position < 0\
+                else 2*simulation_height - self.y_position
 
         self.x_position = int(self.x_position)
         self.y_position = int(self.y_position)
 
     def __repr__(self):
         if self.neighbors:
-            return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(len(self.neighbors)) + " neighbors\n"
+            return "Currently located at: (" + str(self.x_position) + "," +
+                str(self.y_position) + ") with " + str(len(self.neighbors)) +
+                " neighbors\n"
         else:
-            return "Currently located at: (" + str(self.x_position) + "," + str(self.y_position) + ") with " + str(self.neighbors) + " neighbors\n"
+            return "Currently located at: (" + str(self.x_position) + "," +
+                str(self.y_position) + ") with " + str(self.neighbors) +
+                " neighbors\n"
 
 def disable_partition(partition):
     if type(partition) is not Partition:
