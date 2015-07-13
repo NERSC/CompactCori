@@ -13,6 +13,9 @@ import random
 import math
 import numpy as np
 from mpi4py import MPI as mpi
+import json
+from http.server import BaseHTTPRequestHandler
+import urlparse
 
 comm = mpi.COMM_WORLD
 rank = comm.Get_rank()
@@ -72,7 +75,7 @@ def validate_particle_set(*args):
             raise ArgumentError("incorrect type argument: " + type(arg) + " was passed instead of a set")
         for obj in arg:
             if type(obj) is not Particle:
-                raise ArgumentError("Non-particle type in set; received a " + type(obj) + " instead of a Particle"
+                raise ArgumentError("Non-particle type in set; received a " + type(obj) + " instead of a Particle")
 
 class Partition:
     def __init__(self, thread_num):
@@ -110,8 +113,8 @@ class Particle:
         self.y_velocity = y_velocity if (y_velocity != None) else random.randint(-1*simulation_height//10, simulation_height//10)
         self.mass = mass
         self.neighbors = None
-        self.x_accel = 0
-        self.y_accel = 0
+        self.x_accel = 0    # rm
+        self.y_accel = 0    # rm
         self.thread_num = thread_num
 
     def euclidean_distance_to(self, particle):
@@ -218,11 +221,46 @@ def timestep():
     for particle in particles:
         particle.move_particle()
 
+endpoint = "{}"
 def main():
+    from BaseHTTPServer import HTTPServer
+    server = HTTPServer(('localhost', 8080), GetHandler)
+    print("Starting server, ^c to exit")
+    server.serve_forever()
     for i in range(300):
         timestep()
         if ascii:
             text_simulation()
+        else:
+            # Use a temporary endpoint so queries to endpoint only return data
+            # from a completed timestep
+            temp_endpoint = "{\n"
+            for particle in particles:
+                temp_endpoint += json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=2)
+            temp_endpoint += "\n}"
+            endpoint = temp_endpoint
+
+class GetHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        """
+        Handle GET requests to the API endpoint
+        """
+        message = "\r\n".join(endpoint)
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(message)
+        return
+
+#class PostHandler(BaseHTTPRequestHandler):
+#    def do_POST(self):
+#        """
+#        Handle POST requests to the API endpoint
+#        """
+#        message = "\r\n".join(endpoint)
+#        self.send_response(200)
+#        self.end_headers()
+#        self.wfile.write(message)
+#        return
 
 if __name__ == "__main__":
     main()
