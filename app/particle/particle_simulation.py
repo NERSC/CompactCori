@@ -114,7 +114,7 @@ class Partition:
 class Particle:
     static_particles = particles
     def __init__(self, thread_num = 0, x_position = None, y_position = None,
-        x_velocity = 0, y_velocity = 0, mass = 1):
+            x_velocity = 0, y_velocity = 0, mass = 1, radius = 10):
         self.x_position = x_position if (x_position != None)\
             else random.randint(0, simulation_width - 1)
         self.y_position = y_position if (y_position != None)\
@@ -124,6 +124,7 @@ class Particle:
         self.y_velocity = y_velocity if (y_velocity != None)\
             else random.randint(-1*simulation_height//10, simulation_height//10)
         self.mass = mass
+        self.radius = radius
         self.neighbors = None
         self.x_accel = 0    # rm
         self.y_accel = 0    # rm
@@ -239,31 +240,39 @@ def timestep():
     for particle in particles:
         particle.move_particle()
 
-class Handler(BaseHTTPRequestHandler):
+class Server(BaseHTTPRequestHandler):
     def do_GET(self):
         """
         Handle GET requests to the API endpoint
         """
-        message = "\r\n".join(endpoint)
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(message)
+        parsed_path = urlparse.urlparse(self.path)
+        if "/api/v1/get_particles" in parsed_path:
+            message = "\r\n".join(endpoint)
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(message)
+        else:
+            pass
 
     def do_POST(self):
         """
         Handle POST requests to the API endpoint
         """
-        length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(length).decode('utf-8')
-        # Parse data from POST
-#        # Print for debugging
-#        self.wfile.write(str(post_data).encode("utf-8"))
-#        self.wfile.write("\n".encode("utf-8"))
+        parsed_path = urlparse.urlparse(self.path)
+        if "/api/v1/post_parameters" in parsed_path:
+            length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(length).decode('utf-8')
+            # Parse data from POST
+#            # Print for debugging
+#            self.wfile.write(str(post_data).encode("utf-8"))
+#            self.wfile.write("\n".encode("utf-8"))
+        else:
+            pass
 
 endpoint = "{}"
 def main():
     from http.server import HTTPServer
-    server = HTTPServer(('127.0.0.1', 8080), Handler)
+    server = HTTPServer(('127.0.0.1', 8080), Server)
     print("Starting server, ^c to exit")
     server.serve_forever()
     for i in range(300):
@@ -271,8 +280,8 @@ def main():
         if ascii:
             text_simulation()
         else:
-            # Use a temporary endpoint so queries to endpoint only return data
-            # from a completed timestep
+            # Use a copy of endpoint to prevent queries to endpoint from
+            # receiving an in-progress timestep
             temp_endpoint = "{\n"
             for particle in particles:
                 temp_endpoint += json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=2)
