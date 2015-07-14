@@ -239,10 +239,31 @@ def timestep():
     for particle in particles:
         particle.move_particle()
 
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        """
+        Handle GET requests to the API endpoint
+        """
+        message = "\r\n".join(endpoint)
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(message)
+
+    def do_POST(self):
+        """
+        Handle POST requests to the API endpoint
+        """
+        length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(length).decode('utf-8')
+        # Parse data from POST
+#        # Print for debugging
+#        self.wfile.write(str(post_data).encode("utf-8"))
+#        self.wfile.write("\n".encode("utf-8"))
+
 endpoint = "{}"
 def main():
-    from BaseHTTPServer import HTTPServer
-    server = HTTPServer(('localhost', 8080), GetHandler)
+    from http.server import HTTPServer
+    server = HTTPServer(('127.0.0.1', 8080), Handler)
     print("Starting server, ^c to exit")
     server.serve_forever()
     for i in range(300):
@@ -257,28 +278,6 @@ def main():
                 temp_endpoint += json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=2)
             temp_endpoint += "\n}"
             endpoint = temp_endpoint
-
-class GetHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        """
-        Handle GET requests to the API endpoint
-        """
-        message = "\r\n".join(endpoint)
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(message)
-        return
-
-#class PostHandler(BaseHTTPRequestHandler):
-#    def do_POST(self):
-#        """
-#        Handle POST requests to the API endpoint
-#        """
-#        message = "\r\n".join(endpoint)
-#        self.send_response(200)
-#        self.end_headers()
-#        self.wfile.write(message)
-#        return
 
 if __name__ == "__main__":
     main()
