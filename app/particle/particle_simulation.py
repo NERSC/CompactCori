@@ -35,21 +35,21 @@ parser.add_argument("--width", type=int,
         help = "width of simulation window")
 parser.add_argument("-d", "--dt", type=float,
         help = "multiplier time constant")
-parser.add_argument("-a", "--ascii", action="store_true",
-        help = "output ascii of simulation to STDOUT")
+parser.add_argument("-a", "--print_ascii", action="store_true",
+        help = "output print_ascii of simulation to STDOUT")
 parser.add_argument("-s", "--serial", action="store_true",
         help = "specifies if simulation should be run serially")
 
 args = parser.parse_args()
 
 num_particles = args.numparticles if args.numparticles else 20
-interaction_radius = args.radius if args.radius else 100
+radius = args.radius if args.radius else 100
 force_amount = args.force if args.force else 50
 simulation_height = args.height if args.height else 1000
 simulation_width = args.width if args.width else 1000
 force_constant = args.force if args.force else 1
 dt = args.dt if args.dt else 0.0005
-ascii = True if args.ascii else False
+print_ascii = True if args.print_ascii else False
 
 particles = []
 
@@ -92,7 +92,11 @@ class Partition:
         self.active = True
 
     def update_neighbor_thread_list():
-        num_neighbor_partitions = math.ceil(interaction_radius/self.delta_x)
+        """
+        TODO: Depreciate this method because of artificial limiting of particle
+        radius
+        """
+        num_neighbor_partitions = math.ceil(radius/self.delta_x)
         lower_threads = [ i for i in range(max(0,self.thread_num -
             num_neighbor_partitions), self.thread_num)]
         upper_threads = [ i for i in range(self.thread_num + 1,
@@ -114,7 +118,7 @@ class Partition:
 class Particle:
     static_particles = particles
     def __init__(self, thread_num = 0, x_position = None, y_position = None,
-            x_velocity = 0, y_velocity = 0, mass = 1, radius = 10):
+            x_velocity = 0, y_velocity = 0, mass = 1, radius = radius):
         self.x_position = x_position if (x_position != None)\
             else random.randint(0, simulation_width - 1)
         self.y_position = y_position if (y_position != None)\
@@ -131,6 +135,9 @@ class Particle:
         self.thread_num = thread_num
 
     def euclidean_distance_to(self, particle):
+        """
+        TODO: Fix this method to account for the radius of both particles
+        """
         x = abs(self.x_position - particle.x_position)
         y = abs(self.y_position - particle.y_position)
         return (math.sqrt((x**2) + (y**2)), x, y)
@@ -139,7 +146,7 @@ class Particle:
         self.neighbors = []
         for particle in Particle.static_particles:
             euclidean_distance, x_distance, y_distance = self.euclidean_distance_to(particle)
-            if euclidean_distance < interaction_radius and particle is not self:
+            if euclidean_distance < self.radius and particle is not self:
                 self.neighbors.append((particle, x_distance, y_distance))
 
     def calculate_force(self, particle, x_distance, y_distance):
@@ -277,7 +284,7 @@ def main():
     server.serve_forever()
     for i in range(300):
         timestep()
-        if ascii:
+        if print_ascii:
             text_simulation()
         else:
             # Use a copy of endpoint to prevent queries to endpoint from
