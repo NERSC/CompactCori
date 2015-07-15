@@ -53,7 +53,7 @@ print_ascii = True if args.print_ascii else False
 
 particles = []
 
-# DRY out typechecking of arguments
+# TODO: Remove typechecking for production
 def validate_int(*args):
     for arg in args:
         if type(arg) is not int:
@@ -96,6 +96,7 @@ class Partition:
         TODO: Depreciate this method because of artificial limiting of particle
         radius
         """
+
         num_neighbor_partitions = math.ceil(radius/self.delta_x)
         lower_threads = [ i for i in range(max(0,self.thread_num -
             num_neighbor_partitions), self.thread_num)]
@@ -117,50 +118,44 @@ class Partition:
 
 class Particle:
     static_particles = particles
-    def __init__(self, thread_num = 0, x_position = None, y_position = None,
-            x_velocity = 0, y_velocity = 0, mass = 1, radius = radius):
-        self.x_position = x_position if (x_position != None)\
-            else random.randint(0, simulation_width - 1)
-        self.y_position = y_position if (y_position != None)\
-            else random.randint(0, simulation_height - 1)
-        self.x_velocity = x_velocity if (x_velocity != None)\
-            else random.randint(-1*simulation_height//10, simulation_height//10)
-        self.y_velocity = y_velocity if (y_velocity != None)\
-            else random.randint(-1*simulation_height//10, simulation_height//10)
+    def __init__(self, particle_id, thread_num, position, velocity, mass,
+                radius):
+        # TODO: Add validation of list length
+        validate_list(position, velocity)
+        validate_int(particle_id, thread_num, mass, radius)
+
+        self.particle_id = particle_id
+        self.thread_num = thread_num
+        self.position = position
+        self.velocity = velocity
         self.mass = mass
         self.radius = radius
         self.neighbors = None
-        self.x_accel = 0    # rm
-        self.y_accel = 0    # rm
-        self.thread_num = thread_num
 
     def euclidean_distance_to(self, particle):
-        """
-        TODO: Fix this method to account for the radius of both particles
-        """
-        x = abs(self.x_position - particle.x_position)
-        y = abs(self.y_position - particle.y_position)
-        return (math.sqrt((x**2) + (y**2)), x, y)
+        x = abs(self.position[0] - particle.position[0])
+        y = abs(self.position[1] - particle.position[1])
+        z = abs(self.position[2] - particle.position[2])
+        midpoint_distance = math.sqrt((x**2) + (y**2) + (z**2))
+        return (midpoint_distance - self.radius - particle.radius, (x, y, z))
 
     def populate_neighbors(self):
         self.neighbors = []
         for particle in Particle.static_particles:
-            euclidean_distance, x_distance, y_distance = self.euclidean_distance_to(particle)
+            euclidean_distance, distances = self.euclidean_distance_to(particle)
             if euclidean_distance < self.radius and particle is not self:
-                self.neighbors.append((particle, x_distance, y_distance))
+                self.neighbors.append((particle, distances))
 
-    def calculate_force(self, particle, x_distance, y_distance):
-        x = force_constant * (self.mass * particle.mass)/(x_distance**2) if x_distance else 0
-        y = force_constant * (self.mass * particle.mass)/(y_distance**2) if y_distance else 0
-        return x,y
+    def calculate_force(self, particle, distance):
+        x = force_constant * (self.mass * particle.mass)/(distance[0]**2) if distance[0] else 0
+        y = force_constant * (self.mass * particle.mass)/(distance[1]**2) if distance[1] else 0
+        z = force_constant * (self.mass * particle.mass)/(distance[2]**2) if distance[2] else 0
+        return (x,y,z)
 
     def calculate_net_force(self):
-        self.x_accel = 0
-        self.y_accel = 0
-        for neighbor, x_distance, y_distance in self.neighbors:
-            x, y = self.calculate_force(neighbor, x_distance, y_distance)
-            self.x_accel += x * x_distance
-            self.y_accel += y * y_distance
+        for neighbor, distance in self.neighbors:
+            x, y, z = self.calculate_force(neighbor, x_distance, y_distance)
+            # DO AN UPDATE HERE
 
     def move_particle(self):
         """
