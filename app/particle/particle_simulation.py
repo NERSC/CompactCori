@@ -83,6 +83,14 @@ def validate_particle_set(*args):
                         + type(obj) + " instead of a Particle")
 
 class Partition:
+    """
+    Partition class, where each Partition corresponds to the area of the
+    simulation that a thread owns.
+
+    Invariant: If Partition i is active (that is, if there are i threads working
+    on the simulation), then for all partitions j < i, j is active as well
+    """
+    partitions = {}
     def __init__(self, thread_num):
         validate_int(thread_num)
         self.thread_num = thread_num
@@ -90,19 +98,24 @@ class Partition:
         self.start_x = self.delta_x*self.thread_num
         self.end_x = self.start_x + delta_x
         self.active = True
+        partitions[thread_num] = self
 
     def update_neighbor_thread_list():
-        """
-        TODO: Depreciate this method because of artificial limiting of particle
-        radius
-        """
-
-        num_neighbor_partitions = math.ceil(radius/self.delta_x)
-        lower_threads = [ i for i in range(max(0,self.thread_num -
-            num_neighbor_partitions), self.thread_num)]
-        upper_threads = [ i for i in range(self.thread_num + 1,
-            min(self.thread_num + num_neighbor_partitions + 1, num_threads)]
-        self.neighbor_threads = lower_threads + upper_threads
+        # If partition 0 and partition 1 is active
+        if self.thread_num is 0 and partitions[1].active
+            self.neighbor_threads = set(1)
+        # If partition 0 and partition 1 is inactive
+        elif self.thread_num is 0 and not partitions[1].active:
+            self.neighbor_threads = set()
+        # If last partition
+        elif self.thread_num is num_threads - 1:
+            self.neighbor_threads = set(num_threads - 2)
+        # If any other partition and the next partition is inactive
+        else if not partitions[thread_num + 1].active:
+            self.neighbor_threads = set(thread_num - 1)
+        # If any other partition and the next partition is active
+        else:
+            self.neighbor_threads = set(thread_num - 1, thread_num + 1)
 
     def add_particles(particle_set):
         validate_particle_set(particle_set)
