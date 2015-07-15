@@ -12,10 +12,10 @@ import argparse
 import random
 import math
 import numpy as np
-from mpi4py import MPI as mpi
+import urlparse
 import json
 from http.server import BaseHTTPRequestHandler
-import urlparse
+from mpi4py import MPI as mpi
 
 comm = mpi.COMM_WORLD
 rank = comm.Get_rank()
@@ -89,18 +89,23 @@ class Partition:
 
     Invariant: If Partition i is active (that is, if there are i threads working
     on the simulation), then for all partitions j < i, j is active as well
+
+    TODO: Ensure that the last partition picks up any coordinates that would
+    otherwise be ignored due to floor
     """
     partitions = {}
     def __init__(self, thread_num):
         validate_int(thread_num)
+
         self.thread_num = thread_num
+        self.particles = set()
         self.delta_x = simulation_width//num_threads
         self.start_x = self.delta_x*self.thread_num
         self.end_x = self.start_x + delta_x
         self.active = True
         partitions[thread_num] = self
 
-    def update_neighbor_thread_list():
+    def update_neighbor_thread_list(self):
         # If partition 0 and partition 1 is active
         if self.thread_num is 0 and partitions[1].active
             self.neighbor_threads = set(1)
@@ -117,15 +122,15 @@ class Partition:
         else:
             self.neighbor_threads = set(thread_num - 1, thread_num + 1)
 
-    def add_particles(particle_set):
+    def add_particles(self, particle_set):
         validate_particle_set(particle_set)
         self.particles.union(particle_set)
 
-    def remove_particles(particle_set):
+    def remove_particles(self, particle_set):
         validate_particle_set(particle_set)
         self.particles.difference_update(particle_set)
 
-    def set_particles(particle_set):
+    def set_particles(self, particle_set):
         validate_particle_set(particle_set)
         self.particles = particle_set
 
@@ -159,39 +164,52 @@ class Particle:
             if euclidean_distance < self.radius and particle is not self:
                 self.neighbors.append((particle, distances))
 
-    def calculate_force(self, particle, distance):
-        x = force_constant * (self.mass * particle.mass)/(distance[0]**2) if distance[0] else 0
-        y = force_constant * (self.mass * particle.mass)/(distance[1]**2) if distance[1] else 0
-        z = force_constant * (self.mass * particle.mass)/(distance[2]**2) if distance[2] else 0
-        return (x,y,z)
+    def get_momentum(self):
+        return tuple([velocity * self.mass for velocity in self.velocity])
 
-    def calculate_net_force(self):
-        for neighbor, distance in self.neighbors:
-            x, y, z = self.calculate_force(neighbor, x_distance, y_distance)
-            # DO AN UPDATE HERE
+    def update_velocity(self, time):
+        collision_momentum = [0, 0, 0]            # The momentum of the entire system that's colliding
+        collision_momentum = self.get_momentum()  # The momentum of the entire system that's colliding
+        for neighbor in self.neighbors:
+            neighbor_momentum = neighbors.get_momentum()
+            collision_momentum[0] += neighbor_momentum[0]
+            collision_momentum[1] += neighbor_momentum[1]
+            collision_momentum[2] += neighbor_momentum[2]
 
-    def move_particle(self):
-        """
-        Naively assumes velocity is less than the size of the simulation window
-        """
-        self.x_velocity += self.x_accel * dt
-        self.y_velocity += self.y_accel * dt
 
-        self.x_position += self.x_velocity * dt
-        self.y_position += self.y_velocity * dt
-
-        while self.x_position < 0 or self.x_position > simulation_width:
-            self.x_velocity *= -1
-            self.x_position = self.x_position*-1 if self.x_position < 0\
-                else 2*simulation_width - self.x_position
-
-        while self.y_position < 0 or self.y_position > simulation_height:
-            self.y_velocity *= -1
-            self.y_position = self.y_position*-1 if self.y_position < 0\
-                else 2*simulation_height - self.y_position
-
-        self.x_position = int(self.x_position)
-        self.y_position = int(self.y_position)
+#    def calculate_force(self, particle, distance):
+#        x = force_constant * (self.mass * particle.mass)/(distance[0]**2) if distance[0] else 0
+#        y = force_constant * (self.mass * particle.mass)/(distance[1]**2) if distance[1] else 0
+#        z = force_constant * (self.mass * particle.mass)/(distance[2]**2) if distance[2] else 0
+#        return (x,y,z)
+#
+#    def calculate_net_force(self):
+#        for neighbor, distance in self.neighbors:
+#            x, y, z = self.calculate_force(neighbor, x_distance, y_distance)
+#            # DO AN UPDATE HERE
+#
+#    def move_particle(self):
+#        """
+#        Naively assumes velocity is less than the size of the simulation window
+#        """
+#        self.x_velocity += self.x_accel * dt
+#        self.y_velocity += self.y_accel * dt
+#
+#        self.x_position += self.x_velocity * dt
+#        self.y_position += self.y_velocity * dt
+#
+#        while self.x_position < 0 or self.x_position > simulation_width:
+#            self.x_velocity *= -1
+#            self.x_position = self.x_position*-1 if self.x_position < 0\
+#                else 2*simulation_width - self.x_position
+#
+#        while self.y_position < 0 or self.y_position > simulation_height:
+#            self.y_velocity *= -1
+#            self.y_position = self.y_position*-1 if self.y_position < 0\
+#                else 2*simulation_height - self.y_position
+#
+#        self.x_position = int(self.x_position)
+#        self.y_position = int(self.y_position)
 
     def __repr__(self):
         if self.neighbors:
@@ -207,11 +225,13 @@ def disable_partition(partition):
     if type(partition) is not Partition:
         raise TypeError("A " + type(partition) + " was passed to disable_partition")
     partition.active = False
+    # TODO Update neighbor partitions
 
 def enable_partition(partition):
     if type(partition) is not Partition:
         raise TypeError("A " + type(partition) + " was passed to disable_partition")
     partition.active = True
+    # TODO Update neighbor partitions
 
 # Create Partitions and set neighbors
 partitions = []
