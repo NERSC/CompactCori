@@ -11,8 +11,8 @@ import argparse
 import random
 import math
 import numpy as np
-import urlparse
 import json
+from urllib.parse import urlparse
 from http.server import BaseHTTPRequestHandler
 from mpi4py import MPI as mpi
 
@@ -26,8 +26,6 @@ parser.add_argument("-n", "--numparticles", type=int,
         help = "number of particles in simulation")
 parser.add_argument("-r", "--radius", type=int,
         help = "radius of particle interaction")
-parser.add_argument("-f", "--force", type=int,
-        help = "force between particles")
 parser.add_argument("--height", type=int,
         help = "height of simulation ")
 parser.add_argument("--width", type=int,
@@ -35,23 +33,15 @@ parser.add_argument("--width", type=int,
 parser.add_argument("--depth", type=int,
         help = "depth of simulation ")
 parser.add_argument("-d", "--dt", type=float,
-        help = "multiplier time constant")
-parser.add_argument("-a", "--print_ascii", action="store_true",
-        help = "output print_ascii of simulation to STDOUT")
-parser.add_argument("-s", "--serial", action="store_true",
-        help = "specifies if simulation should be run serially")
-
+        help = "time constant")
 args = parser.parse_args()
 
 num_particles = args.numparticles if args.numparticles else 20
 radius = args.radius if args.radius else 100
-force_amount = args.force if args.force else 50
 simulation_height = args.height if args.height else 1000
 simulation_width = args.width if args.width else 1000
 simulation_depth = args.depth if args.depth else 1000
-force_constant = args.force if args.force else 1
 dt = args.dt if args.dt else 0.0005
-print_ascii = True if args.print_ascii else False
 
 particles = []
 
@@ -59,20 +49,20 @@ particles = []
 def validate_int(*args):
     for arg in args:
         if type(arg) is not int:
-            error(ArgumentError, "incorrect type argument: " + type(arg) + " was
-                    passed instead of a int")
+            error(ArgumentError, "incorrect type argument: " + type(arg) +
+                "was passed instead of a int")
 
 def validate_list(*args):
     for arg in args:
         if type(arg) is not list:
-            error(ArgumentError, "incorrect type argument: " + type(arg) + " was
-                    passed instead of a list")
+            error(ArgumentError, "incorrect type argument: " + type(arg) +
+                "was passed instead of a int")
 
 def validate_particle_set(*args):
     for arg in args:
         if type(arg) is not set:
-            error(ArgumentError, "incorrect type argument: " + type(arg) + " was
-                    passed instead of a set")
+            error(ArgumentError, "incorrect type argument: " + type(arg) +
+                "was passed instead of a set")
         for obj in arg:
             if type(obj) is not Particle:
                 error(ArgumentError, "Non-particle type in set; received a " +
@@ -141,8 +131,8 @@ class Partition:
         self.particles = particle_set
 
     def is_not_in_range(self, particle):
-        """Naively assumes that the particle will never be travelling fast enough
-        to jump more than one partition at a time.
+        """Naively assumes that the particle will never be travelling fast
+        enough to jump more than one partition at a time.
 
         Returns -1 if the particle is in the previous partition
                 0 if the particle is still in this partition
@@ -161,6 +151,8 @@ class Particle:
         # TODO: Add validation of list length
         validate_list(position, velocity)
         validate_int(particle_id, thread_num, mass, radius)
+        if radius > min(simulation_width, simulation_height, simulation_depth)/32:
+            debug("Radius is greater than 1/32 of the simulation")
 
         self.particle_id = particle_id
         self.thread_num = thread_num
@@ -206,42 +198,13 @@ class Particle:
 
         if any(d > self.radius for d in delta):
             debug("A particle is moving a distance of more than self.radius")
-        while self.position[0] > simulation_width:
 
-
-#    def calculate_force(self, particle, distance):
-#        x = force_constant * (self.mass * particle.mass)/(distance[0]**2) if distance[0] else 0
-#        y = force_constant * (self.mass * particle.mass)/(distance[1]**2) if distance[1] else 0
-#        z = force_constant * (self.mass * particle.mass)/(distance[2]**2) if distance[2] else 0
-#        return (x,y,z)
-#
-#    def calculate_net_force(self):
-#        for neighbor, distance in self.neighbors:
-#            x, y, z = self.calculate_force(neighbor, x_distance, y_distance)
-#            # DO AN UPDATE HERE
-#
-#    def move_particle(self):
-#        """
-#        Naively assumes velocity is less than the size of the simulation window
-#        """
-#        self.x_velocity += self.x_accel * dt
-#        self.y_velocity += self.y_accel * dt
-#
-#        self.x_position += self.x_velocity * dt
-#        self.y_position += self.y_velocity * dt
-#
-#        while self.x_position < 0 or self.x_position > simulation_width:
-#            self.x_velocity *= -1
-#            self.x_position = self.x_position*-1 if self.x_position < 0\
-#                else 2*simulation_width - self.x_position
-#
-#        while self.y_position < 0 or self.y_position > simulation_height:
-#            self.y_velocity *= -1
-#            self.y_position = self.y_position*-1 if self.y_position < 0\
-#                else 2*simulation_height - self.y_position
-#
-#        self.x_position = int(self.x_position)
-#        self.y_position = int(self.y_position)
+        # Bounce particles off edge of simulation
+        for i in range(3):
+            while self.position[i] < i or self.position[i] > simulation_width:
+                self.velocity[i] *= -1
+                self.position[i] = self.position[i]*-1 if self.position[i] < 0\
+                    else 2*simulation_width - self.position[i]
 
     def __repr__(self):
         if self.neighbors:
@@ -276,28 +239,6 @@ for _ in range(num_particles):
 
     particles.append(Particle())
 
-def text_simulation():
-    """
-    Print out an ASCII-based representation of the simulation to STDOUT
-    """
-    # Populate nested list
-    arr = [[" "] * simulation_height for _ in range(simulation_width)]
-    for particle in particles:
-        arr[particle.x_position][particle.y_position] = "o"
-
-    # Convert list to buffer to print to STDOUT
-    buf = " "
-    for i in range(simulation_width):
-        buf += str(i % 10)
-    buf += "\n " + "-" * simulation_width + "\n"
-    for j in range(simulation_height):
-        buf += "|"
-        for i in range(simulation_width):
-            buf += arr[i][j]
-        buf += "|" +  str(j) + "\n"
-    buf += " " + "-" * simulation_width
-    print(buf)
-
 # One timestep
 def timestep():
     for particle in particles:
@@ -310,47 +251,45 @@ def timestep():
 class Server(BaseHTTPRequestHandler):
     def do_GET(self):
         """Handle GET requests to the API endpoint"""
-        parsed_path = urlparse.urlparse(self.path)
+        parsed_path = urlparse(self.path)
         if "/api/v1/get_particles" in parsed_path:
             message = "\r\n".join(endpoint)
             self.send_response(200)
             self.end_headers()
-            self.wfile.write(message)
+            self.wfile.write(message.encode("utf-8"))
         else:
-            pass
+            debug("GET request sent to " + parsed_path)
 
     def do_POST(self):
         """Handle POST requests to the API endpoint"""
-        parsed_path = urlparse.urlparse(self.path)
+        parsed_path = urlparse(self.path)
         if "/api/v1/post_parameters" in parsed_path:
-            length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(length).decode('utf-8')
+            length = int(self.headers["Content-Length"])
+            post_data = self.rfile.read(length).decode("utf-8")
             # Parse data from POST
 
 #            # Print for debugging
+            pass
 #            self.wfile.write(str(post_data).encode("utf-8"))
 #            self.wfile.write("\n".encode("utf-8"))
         else:
-            pass
+            debug("POST request sent to " + parsed_path)
 
-endpoint = "{}"
+endpoint = "{\n}"
 def main():
     from http.server import HTTPServer
-    server = HTTPServer(('127.0.0.1', 8080), Server)
+    server = HTTPServer(("127.0.0.1", 8080), Server)
     print("Starting server, ^c to exit")
     server.serve_forever()
-    for i in range(300):
+    while True:
         timestep()
-        if print_ascii:
-            text_simulation()
-        else:
-            # Use a copy of endpoint to prevent queries to endpoint from
-            # receiving an in-progress timestep
-            temp_endpoint = "{\n"
-            for particle in particles:
-                temp_endpoint += json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=2)
-            temp_endpoint += "\n}"
-            endpoint = temp_endpoint
+        # Use a copy of endpoint to prevent queries to endpoint from
+        # receiving an in-progress timestep
+        temp_endpoint = "{\n"
+        for particle in particles:
+            temp_endpoint += json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=2)
+        temp_endpoint += "\n}"
+        endpoint = temp_endpoint
 
 if __name__ == "__main__":
     main()
