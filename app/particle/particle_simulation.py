@@ -1,6 +1,5 @@
 #!/usr/bin/python
-"""
-A parallelized MD simulation in Python written for version 1 of the Compact Cori
+"""A parallelized MD simulation in Python written for version 1 of the Compact Cori
 project at NERSC.
 
 This runs in O(n^2) time since all particles are compared to one another when
@@ -30,9 +29,11 @@ parser.add_argument("-r", "--radius", type=int,
 parser.add_argument("-f", "--force", type=int,
         help = "force between particles")
 parser.add_argument("--height", type=int,
-        help = "height of simulation window")
+        help = "height of simulation ")
 parser.add_argument("--width", type=int,
-        help = "width of simulation window")
+        help = "width of simulation ")
+parser.add_argument("--depth", type=int,
+        help = "depth of simulation ")
 parser.add_argument("-d", "--dt", type=float,
         help = "multiplier time constant")
 parser.add_argument("-a", "--print_ascii", action="store_true",
@@ -47,6 +48,7 @@ radius = args.radius if args.radius else 100
 force_amount = args.force if args.force else 50
 simulation_height = args.height if args.height else 1000
 simulation_width = args.width if args.width else 1000
+simulation_depth = args.depth if args.depth else 1000
 force_constant = args.force if args.force else 1
 dt = args.dt if args.dt else 0.0005
 print_ascii = True if args.print_ascii else False
@@ -57,34 +59,38 @@ particles = []
 def validate_int(*args):
     for arg in args:
         if type(arg) is not int:
-            raise ArgumentError("incorrect type argument: " + type(arg) +
-                    " was passed instead of an int")
+            error(ArgumentError, "incorrect type argument: " + type(arg) + " was
+                    passed instead of a int")
 
 def validate_list(*args):
     for arg in args:
         if type(arg) is not list:
-            raise ArgumentError("incorrect type argument: " + type(arg) +
-                    " was passed instead of a list")
-
-def validate_dict(*args):
-    for arg in args:
-        if type(arg) is not dict:
-            raise ArgumentError("incorrect type argument: " + type(arg) +
-                    " was passed instead of a dict")
+            error(ArgumentError, "incorrect type argument: " + type(arg) + " was
+                    passed instead of a list")
 
 def validate_particle_set(*args):
     for arg in args:
         if type(arg) is not set:
-            raise ArgumentError("incorrect type argument: " + type(arg) +
-                    " was passed instead of a set")
+            error(ArgumentError, "incorrect type argument: " + type(arg) + " was
+                    passed instead of a set")
         for obj in arg:
             if type(obj) is not Particle:
-                raise ArgumentError("Non-particle type in set; received a "
-                        + type(obj) + " instead of a Particle")
+                error(ArgumentError, "Non-particle type in set; received a " +
+                        type(obj) + " instead of a Particle")
+
+def debug(string):
+    """Print a message in yellow to STDOUT"""
+    CSI="\x1B["
+    print(CSI + "31;93m" + "[DEBUG]    " + string + CSI + "31;0m")
+
+def error(err, string):
+    """Print a message in red to STDOUT and raise an exception"""
+    CSI="\x1B["
+    print(CSI + "31;31m" + "[ERROR]    " + string + CSI + "31;0m")
+    raise err(CSI + "31;31m" + string + CSI + "31;0m")
 
 class Partition:
-    """
-    Partition class, where each Partition corresponds to the area of the
+    """Partition class, where each Partition corresponds to the area of the
     simulation that a thread owns.
 
     Invariant: If Partition i is active (that is, if there are i threads working
@@ -134,8 +140,22 @@ class Partition:
         validate_particle_set(particle_set)
         self.particles = particle_set
 
+    def is_not_in_range(self, particle):
+        """Naively assumes that the particle will never be travelling fast enough
+        to jump more than one partition at a time.
+
+        Returns -1 if the particle is in the previous partition
+                0 if the particle is still in this partition
+                1 if the particle is in the next partition
+        """
+        if particle.position[0] < self.start_x:
+            return -1
+        elif particle.position[0] > self.end_x:
+            return 1
+        else:
+            return 0
+
 class Particle:
-    static_particles = particles
     def __init__(self, particle_id, thread_num, position, velocity, mass,
                 radius):
         # TODO: Add validation of list length
@@ -157,12 +177,14 @@ class Particle:
         midpoint_distance = math.sqrt((x**2) + (y**2) + (z**2))
         return (midpoint_distance - self.radius - particle.radius, (x, y, z))
 
-    def populate_neighbors(self):
+    def populate_neighbors(self, particles):
         self.neighbors = []
-        for particle in Particle.static_particles:
+        for particle in particles
             euclidean_distance, distances = self.euclidean_distance_to(particle)
             if euclidean_distance < self.radius and particle is not self:
                 self.neighbors.append((particle, distances))
+        if len(self.neighbors) > 1:
+            debug("There are multiple collisions happening at once")
 
     def get_momentum(self):
         return tuple([velocity * self.mass for velocity in self.velocity])
@@ -175,6 +197,16 @@ class Particle:
             collision_momentum[0] += neighbor_momentum[0]
             collision_momentum[1] += neighbor_momentum[1]
             collision_momentum[2] += neighbor_momentum[2]
+
+    def update_position(self, time = dt):
+        delta = [component*time for component in self.velocity]
+        self.position[0] += delta[0]
+        self.position[1] += delta[1]
+        self.position[2] += delta[2]
+
+        if any(d > self.radius for d in delta):
+            debug("A particle is moving a distance of more than self.radius")
+        while self.position[0] > simulation_width:
 
 
 #    def calculate_force(self, particle, distance):
@@ -277,9 +309,7 @@ def timestep():
 
 class Server(BaseHTTPRequestHandler):
     def do_GET(self):
-        """
-        Handle GET requests to the API endpoint
-        """
+        """Handle GET requests to the API endpoint"""
         parsed_path = urlparse.urlparse(self.path)
         if "/api/v1/get_particles" in parsed_path:
             message = "\r\n".join(endpoint)
@@ -290,14 +320,13 @@ class Server(BaseHTTPRequestHandler):
             pass
 
     def do_POST(self):
-        """
-        Handle POST requests to the API endpoint
-        """
+        """Handle POST requests to the API endpoint"""
         parsed_path = urlparse.urlparse(self.path)
         if "/api/v1/post_parameters" in parsed_path:
             length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(length).decode('utf-8')
             # Parse data from POST
+
 #            # Print for debugging
 #            self.wfile.write(str(post_data).encode("utf-8"))
 #            self.wfile.write("\n".encode("utf-8"))
