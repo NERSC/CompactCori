@@ -20,6 +20,8 @@ comm = mpi.COMM_WORLD
 rank = comm.Get_rank()
 num_threads = comm.Get_size()
 
+max_radius = 1000
+
 # Parse arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--numparticles", type=int,
@@ -101,7 +103,7 @@ class Partition:
         self.active = True
         partitions[thread_num] = self
 
-    def update_neighbor_thread_list(self):
+    def update_neighbor_thread_set(self):
         # If partition 0 and partition 1 is active
         if self.thread_num is 0 and partitions[1].active
             self.neighbor_threads = set(1)
@@ -145,6 +147,16 @@ class Partition:
         else:
             return 0
 
+    def handoff(self):
+        right = set()
+        left = set()
+        for particle in self.particles:
+            if particle.position[0] + particle.radius + max_radius > self.end_x:
+                right.add(particle)
+            elif particle.position[0] - particle.radius - max_radius < self.start_x:
+                left.add(particle)
+        return (right, left)
+
 class Particle:
     def __init__(self, particle_id, thread_num, position, velocity, mass,
                 radius):
@@ -181,7 +193,7 @@ class Particle:
     def get_momentum(self):
         return tuple([velocity * self.mass for velocity in self.velocity])
 
-    def update_velocity(self, time):
+    def update_velocity(self):
         collision_mass = 0
         collision_velocity = [0, 0, 0]            # The velocity of the entire system that's colliding
         for neighbor in self.neighbors:
@@ -189,11 +201,11 @@ class Particle:
             for i in range(3):
                 collision_velocity[i] += neighbor.velocity[i]
 
+        mass_difference = self.mass - collision_mass
+        mass_sum = self.mass + collision_mass
         for i in range 3:
-            self.velocity[i] = ((self.mass - collision_mass)/(self.mass +
-                    collision.mass)) * self.velocity[i] +
-                    2*collision_mass)/(self.mass +
-                    collision.mass))*collision_velocity[i]
+            self.velocity[i] = (mass_difference/mass_sum) * self.velocity[i] +\
+                    ((2*collision_mass)/mass_sum)*collision_velocity[i]
 
     def update_position(self, time = dt):
         delta = [component*time for component in self.velocity]
@@ -246,12 +258,57 @@ for _ in range(num_particles):
 
 # One timestep
 def timestep():
-    for particle in particles:
-        particle.populate_neighbors()
-    for particle in particles:
-        particle.calculate_net_force()
-    for particle in particles:
-        particle.move_particle()
+    if rank is 0:
+        particles = []
+        buff = []
+        for i in range(1,num_threads):
+            comm.Recv(buff, source = mpi.ANY_SOURCE)
+            particles += buff
+    else:
+        partition = partitions[rank]
+        partition.update_neighbor_thread_set()
+
+        right, left = partition.handoff()
+
+        # Update neighbors with my particles
+        if partitions[rank - 1].active:
+            comm.Send(left , dest = rank - 1)
+        if partitions[rank + 1].active:
+            comm.Send(right, dest = rank + 1)
+        # Receive particles from neighbors
+        neighbor_particles = []
+        for _ in parition.neighbor_threads:
+            comm.Recv(neighbor_particles, source = mpi.ANY_SOURCE)
+
+        # Do computation
+        for particle in partition.particles:
+            particle.populate_neighbors(partition.particles + neighbor_particles)
+        for particle in partition.particles:
+            particle.update_velocity()
+        for particle in partition.particles:
+            particle.update_position(dt)
+
+        right, left = [], []
+        for particle in particles:
+            # Check to see if the particle is in this partition still, if not,
+            # populate the lists
+            pass
+
+        # Send neighbors their new particles
+        if partitions[rank - 1].active:
+            comm.Send(left , dest = rank - 1)
+        if partitions[rank + 1].active:
+            comm.Send(right, dest = rank + 1)
+
+        # Receive particles from neighbors
+        new_particles = []
+        for _ in parition.neighbor_threads:
+            comm.Recv(new_particles, source = mpi.ANY_SOURCE)
+        partition.add_particles(new_particles)
+
+        # Update root
+        comm.Send(partition.particles)
+
 
 class Server(BaseHTTPRequestHandler):
     def do_GET(self):
