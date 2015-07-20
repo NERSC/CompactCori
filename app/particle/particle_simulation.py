@@ -7,10 +7,14 @@ locating in-range neighbors.
 
 Threads in mpi4py are 0-indexed
 """
+import Partition
+import Particle
+
 import argparse
 import random
 import math
 import numpy as np
+import threading
 import json
 from urllib.parse import urlparse
 from http.server import BaseHTTPRequestHandler
@@ -81,157 +85,6 @@ def error(err, string):
     print(CSI + "31;31m" + "[ERROR]    " + string + CSI + "31;0m")
     raise err(CSI + "31;31m" + string + CSI + "31;0m")
 
-class Partition:
-    """Partition class, where each Partition corresponds to the area of the
-    simulation that a thread owns.
-
-    Invariant: If Partition i is active (that is, if there are i threads working
-    on the simulation), then for all partitions j < i, j is active as well
-
-    TODO: Ensure that the last partition picks up any coordinates that would
-    otherwise be ignored due to floor
-    """
-    partitions = {}
-    def __init__(self, thread_num):
-        validate_int(thread_num)
-
-        self.thread_num = thread_num
-        self.particles = set()
-        self.delta_x = simulation_width//num_threads
-        self.start_x = self.delta_x*self.thread_num
-        self.end_x = self.start_x + delta_x
-        self.active = True
-        partitions[thread_num] = self
-
-    def update_neighbor_thread_set(self):
-        # If partition 0 and partition 1 is active
-        if self.thread_num is 0 and partitions[1].active
-            self.neighbor_threads = set(1)
-        # If partition 0 and partition 1 is inactive
-        elif self.thread_num is 0 and not partitions[1].active:
-            self.neighbor_threads = set()
-        # If last partition
-        elif self.thread_num is num_threads - 1:
-            self.neighbor_threads = set(num_threads - 2)
-        # If any other partition and the next partition is inactive
-        else if not partitions[thread_num + 1].active:
-            self.neighbor_threads = set(thread_num - 1)
-        # If any other partition and the next partition is active
-        else:
-            self.neighbor_threads = set(thread_num - 1, thread_num + 1)
-
-    def add_particles(self, particle_set):
-        validate_particle_set(particle_set)
-        self.particles.union(particle_set)
-
-    def remove_particles(self, particle_set):
-        validate_particle_set(particle_set)
-        self.particles.difference_update(particle_set)
-
-    def set_particles(self, particle_set):
-        validate_particle_set(particle_set)
-        self.particles = particle_set
-
-    def is_not_in_range(self, particle):
-        """Naively assumes that the particle will never be travelling fast
-        enough to jump more than one partition at a time.
-
-        Returns -1 if the particle is in the previous partition
-                0 if the particle is still in this partition
-                1 if the particle is in the next partition
-        """
-        if particle.position[0] < self.start_x:
-            return -1
-        elif particle.position[0] > self.end_x:
-            return 1
-        else:
-            return 0
-
-    def handoff(self):
-        right = set()
-        left = set()
-        for particle in self.particles:
-            if particle.position[0] + particle.radius + max_radius > self.end_x:
-                right.add(particle)
-            elif particle.position[0] - particle.radius - max_radius < self.start_x:
-                left.add(particle)
-        return (right, left)
-
-class Particle:
-    def __init__(self, particle_id, thread_num, position, velocity, mass,
-                radius):
-        # TODO: Add validation of list length
-        validate_list(position, velocity)
-        validate_int(particle_id, thread_num, mass, radius)
-        if radius > min(simulation_width, simulation_height, simulation_depth)/32:
-            debug("Radius is greater than 1/32 of the simulation")
-
-        self.particle_id = particle_id
-        self.thread_num = thread_num
-        self.position = position
-        self.velocity = velocity
-        self.mass = mass
-        self.radius = radius
-        self.neighbors = None
-
-    def euclidean_distance_to(self, particle):
-        x = abs(self.position[0] - particle.position[0])
-        y = abs(self.position[1] - particle.position[1])
-        z = abs(self.position[2] - particle.position[2])
-        center_to_center = math.sqrt((x**2) + (y**2) + (z**2))
-        return (center_to_center - self.radius - particle.radius, (x, y, z))
-
-    def populate_neighbors(self, particles):
-        self.neighbors = []
-        for particle in particles
-            euclidean_distance, distances = self.euclidean_distance_to(particle)
-            if euclidean_distance < self.radius and particle is not self:
-                self.neighbors.append((particle, distances))
-        if len(self.neighbors) > 1:
-            debug("There are multiple collisions happening at once")
-
-    def get_momentum(self):
-        return tuple([velocity * self.mass for velocity in self.velocity])
-
-    def update_velocity(self):
-        collision_mass = 0
-        collision_velocity = [0, 0, 0]            # The velocity of the entire system that's colliding
-        for neighbor in self.neighbors:
-            collision_mass += neighbor.mass
-            for i in range(3):
-                collision_velocity[i] += neighbor.velocity[i]
-
-        mass_difference = self.mass - collision_mass
-        mass_sum = self.mass + collision_mass
-        for i in range 3:
-            self.velocity[i] = (mass_difference/mass_sum) * self.velocity[i] +\
-                    ((2*collision_mass)/mass_sum)*collision_velocity[i]
-
-    def update_position(self, time = dt):
-        delta = [component*time for component in self.velocity]
-        self.position[0] += delta[0]
-        self.position[1] += delta[1]
-        self.position[2] += delta[2]
-
-        if any(d > self.radius for d in delta):
-            debug("A particle is moving a distance of more than self.radius")
-
-        # Bounce particles off edge of simulation
-        for i in range(3):
-            while self.position[i] < i or self.position[i] > simulation_width:
-                self.velocity[i] *= -1
-                self.position[i] = self.position[i]*-1 if self.position[i] < 0\
-                    else 2*simulation_width - self.position[i]
-
-    def __repr__(self):
-        if self.neighbors:
-            return "Currently located at: (" + str(self.x_position) + "," +
-                str(self.y_position) + ") with " + str(len(self.neighbors)) +
-                " neighbors\n"
-        else:
-            return "Currently located at: (" + str(self.x_position) + "," +
-                str(self.y_position) + ") with " + str(self.neighbors) +
-                " neighbors\n"
 
 def disable_partition(partition):
     if type(partition) is not Partition:
@@ -309,14 +162,15 @@ def timestep():
         # Update root
         comm.Send(partition.particles)
 
-
 class Server(BaseHTTPRequestHandler):
     def do_GET(self):
         """Handle GET requests to the API endpoint"""
+        global endpoint
         parsed_path = urlparse(self.path)
         if "/api/v1/get_particles" in parsed_path:
             message = "\r\n".join(endpoint)
             self.send_response(200)
+            self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(message.encode("utf-8"))
         else:
@@ -324,6 +178,7 @@ class Server(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """Handle POST requests to the API endpoint"""
+        global endpoint
         parsed_path = urlparse(self.path)
         if "/api/v1/post_parameters" in parsed_path:
             length = int(self.headers["Content-Length"])
@@ -339,10 +194,11 @@ class Server(BaseHTTPRequestHandler):
 
 endpoint = "{\n}"
 def main():
+    global endpoint
     from http.server import HTTPServer
     server = HTTPServer(("127.0.0.1", 8080), Server)
     print("Starting server, ^c to exit")
-    server.serve_forever()
+    threading.Thread(target=server.serve_forever).start()
     while True:
         timestep()
         # Use a copy of endpoint to prevent queries to endpoint from
