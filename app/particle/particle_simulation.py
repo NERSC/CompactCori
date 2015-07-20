@@ -166,8 +166,8 @@ class Particle:
         x = abs(self.position[0] - particle.position[0])
         y = abs(self.position[1] - particle.position[1])
         z = abs(self.position[2] - particle.position[2])
-        midpoint_distance = math.sqrt((x**2) + (y**2) + (z**2))
-        return (midpoint_distance - self.radius - particle.radius, (x, y, z))
+        center_to_center = math.sqrt((x**2) + (y**2) + (z**2))
+        return (center_to_center - self.radius - particle.radius, (x, y, z))
 
     def populate_neighbors(self, particles):
         self.neighbors = []
@@ -182,13 +182,18 @@ class Particle:
         return tuple([velocity * self.mass for velocity in self.velocity])
 
     def update_velocity(self, time):
-        collision_momentum = [0, 0, 0]            # The momentum of the entire system that's colliding
-        collision_momentum = self.get_momentum()  # The momentum of the entire system that's colliding
+        collision_mass = 0
+        collision_velocity = [0, 0, 0]            # The velocity of the entire system that's colliding
         for neighbor in self.neighbors:
-            neighbor_momentum = neighbors.get_momentum()
-            collision_momentum[0] += neighbor_momentum[0]
-            collision_momentum[1] += neighbor_momentum[1]
-            collision_momentum[2] += neighbor_momentum[2]
+            collision_mass += neighbor.mass
+            for i in range(3):
+                collision_velocity[i] += neighbor.velocity[i]
+
+        for i in range 3:
+            self.velocity[i] = ((self.mass - collision_mass)/(self.mass +
+                    collision.mass)) * self.velocity[i] +
+                    2*collision_mass)/(self.mass +
+                    collision.mass))*collision_velocity[i]
 
     def update_position(self, time = dt):
         delta = [component*time for component in self.velocity]
