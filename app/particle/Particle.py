@@ -17,7 +17,7 @@ class Particle:
         self.neighbors = None
         self.max_radius = min(simulation_width, simulation_height, simulation_depth)/32
 
-        if radius > self.max_radius;
+        if radius > self.max_radius:
             debug("Radius is greater than 1/32 of the simulation")
 
     def euclidean_distance_to(self, particle):
@@ -29,7 +29,7 @@ class Particle:
 
     def populate_neighbors(self, particles):
         self.neighbors = []
-        for particle in particles
+        for particle in particles:
             euclidean_distance, distances = self.euclidean_distance_to(particle)
             if euclidean_distance < self.radius and particle is not self:
                 self.neighbors.append((particle, distances))
@@ -49,11 +49,11 @@ class Particle:
 
         mass_difference = self.mass - collision_mass
         mass_sum = self.mass + collision_mass
-        for i in range 3:
+        for i in range(3):
             self.velocity[i] = (mass_difference/mass_sum) * self.velocity[i] +\
                     ((2*collision_mass)/mass_sum)*collision_velocity[i]
 
-    def update_position(self, time = dt):
+    def update_position(self, time):
         delta = [component*time for component in self.velocity]
         self.position[0] += delta[0]
         self.position[1] += delta[1]
@@ -68,13 +68,3 @@ class Particle:
                 self.velocity[i] *= -1
                 self.position[i] = self.position[i]*-1 if self.position[i] < 0\
                     else 2*simulation_width - self.position[i]
-
-    def __repr__(self):
-        if self.neighbors:
-            return "Currently located at: (" + str(self.x_position) + "," +
-                str(self.y_position) + ") with " + str(len(self.neighbors)) +
-                " neighbors\n"
-        else:
-            return "Currently located at: (" + str(self.x_position) + "," +
-                str(self.y_position) + ") with " + str(self.neighbors) +
-                " neighbors\n"

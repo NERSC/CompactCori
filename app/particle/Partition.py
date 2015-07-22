@@ -25,7 +25,7 @@ class Partition:
     def update_neighbor_thread_set(self):
         #TODO: FIX NUM_THREADS
         # If partition 0 and partition 1 is active
-        if self.thread_num is 0 and partitions[1].active
+        if self.thread_num is 0 and partitions[1].active:
             self.neighbor_threads = set(1)
         # If partition 0 and partition 1 is inactive
         elif self.thread_num is 0 and not partitions[1].active:
@@ -34,7 +34,7 @@ class Partition:
         elif self.thread_num is num_threads - 1:
             self.neighbor_threads = set(num_threads - 2)
         # If any other partition and the next partition is inactive
-        else if not partitions[thread_num + 1].active:
+        elif not partitions[thread_num + 1].active:
             self.neighbor_threads = set(thread_num - 1)
         # If any other partition and the next partition is active
         else:
