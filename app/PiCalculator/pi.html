@@ -1,0 +1,153 @@
+<head>
+    <title>PI Calculation In Parallel</title>
+</head>
+<body>
+{{> bspi}}
+</body>
+
+<template name="setTrialName">
+    <form class="setTrialName">
+        <input type="text" name="trialName">
+        <input type="submit" value="Start Trial">
+    </form>
+</template>
+
+<template name="serverPi">
+    {{#with serverPiData}}
+        <table border="1">
+            <tr>
+                <th>Number of Points inside the Circle</th>
+                <th>Total Number of Points</th>
+                <th>PI</th>
+                <th>Performance Speed</th>
+                <th>Amount of Points Calculated in Five Seconds</th>
+            </tr>
+            <tr>
+                <td>{{ptInsideCir}}</td>
+                <td>{{totalNumOfPts}}</td>
+                <td>{{calcPi ptInsideCir totalNumOfPts}}</td>
+                <td>{{calculatePerformanceSpeed}}</td>
+                <td>{{calculatePointsComputedEveryNSeconds}}</td>
+            </tr>
+        </table>
+    {{/with}}
+</template>
+
+<template name="piTrials">
+    <table border="1">
+        <tr>
+            <th>Profile Picture</th>
+            <th>Trial Name</th>
+            <th>Number of Points Inside the Circle</th>
+            <th>Total Number of Points</th>
+            <th>PI</th>
+        </tr>
+        {{#each piTrialsData}}
+            <tr>
+                <td><img style="max-width:100px; margin-top: -7px" src={{getProfilePicture}}></td>
+                <td>{{trial}}</td>
+                <td>{{ptInsideCir}}</td>
+                <td>{{totalNumOfPts}}</td>
+                <td>{{calcPi ptInsideCir totalNumOfPts}}</td>
+            </tr>
+        {{/each}}
+    </table>
+</template>
+
+<template name="mypi">
+    {{#if isTrialNameSet}}
+        {{> serverPi}}
+        <h2>PI Calculated By Clients</h2>
+        {{> piTrials}}
+    {{else}}
+        {{> setTrialName}}
+    {{/if}}
+</template>
+
+<template name="navbar">
+    <nav class="navbar navbar-default" role="navigation">
+        <div class="navbar-header">
+
+            <button type="button" class="navbar-toggle" data-toggle="collapse"
+                    data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span><span class="icon-bar"></span>
+                <span class="icon-bar"></span><span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" rel="home" href="#" title="NERSC">
+                <img style="max-width:100px; margin-top: -7px;"
+                     src="/img/logo-NeRSC.png">
+            </a>
+        </div>
+
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li>
+                    <a href="#">&nbsp;&nbsp;&nbsp;&nbsp;</a>
+                </li>
+                <li>
+                    <a href="#">&nbsp;&nbsp;&nbsp;&nbsp;</a>
+                </li>
+
+                <li>
+                    {{#with serverPiData}}
+                        <a href="#">PI = {{calcPi ptInsideCir totalNumOfPts}}</a>
+                    {{/with}}
+                </li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li class="aria-label">
+                    <a href="#">Trial Name:</a></li>
+                <form class="navbar-form navbar-left setTrialName" role="search" id="trialFormId">
+                    <div class="form-group">
+                        <input type="text" name="trialName" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-default">
+                        Join To Calculate
+                    </button>
+                </form>
+            </ul>
+        </div>
+    </nav>
+</template>
+
+<template name="bspi">
+    <div class="container-fluid">
+        {{> navbar}}
+        <div class="jumbotron">
+            <h2>
+                Welcome to NERSC!
+            </h2>
+
+            <p>
+                This application is to show how multiple machines can calculate the value of PI in parallel. If you are
+                interested, please log in and add your machine to the army of computers to find the value of PI.
+            </p>
+
+            <p>
+                Please use a trial name to identify each run that you make.
+            </p>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <h3>
+                    PI on Server
+                </h3>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        {{> serverPi}}
+                    </div>
+                </div>
+                <h3>
+                    PI on Clients
+                </h3>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        {{> piTrials}}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
