@@ -7,8 +7,6 @@ class Particle:
         # TODO: Add validation of list length
         validate_list(position, velocity)
         validate_int(particle_id, thread_num, mass, radius)
-        if radius > min(simulation_width, simulation_height, simulation_depth)/32:
-            debug("Radius is greater than 1/32 of the simulation")
 
         self.particle_id = particle_id
         self.thread_num = thread_num
@@ -17,6 +15,10 @@ class Particle:
         self.mass = mass
         self.radius = radius
         self.neighbors = None
+        self.max_radius = min(simulation_width, simulation_height, simulation_depth)/32
+
+        if radius > self.max_radius;
+            debug("Radius is greater than 1/32 of the simulation")
 
     def euclidean_distance_to(self, particle):
         x = abs(self.position[0] - particle.position[0])

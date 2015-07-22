@@ -24,8 +24,6 @@ comm = mpi.COMM_WORLD
 rank = comm.Get_rank()
 num_threads = comm.Get_size()
 
-max_radius = 1000
-
 # Parse arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--numparticles", type=int,
@@ -84,19 +82,6 @@ def error(err, string):
     CSI="\x1B["
     print(CSI + "31;31m" + "[ERROR]    " + string + CSI + "31;0m")
     raise err(CSI + "31;31m" + string + CSI + "31;0m")
-
-
-def disable_partition(partition):
-    if type(partition) is not Partition:
-        raise TypeError("A " + type(partition) + " was passed to disable_partition")
-    partition.active = False
-    # TODO Update neighbor partitions
-
-def enable_partition(partition):
-    if type(partition) is not Partition:
-        raise TypeError("A " + type(partition) + " was passed to disable_partition")
-    partition.active = True
-    # TODO Update neighbor partitions
 
 # Create Partitions and set neighbors
 partitions = []

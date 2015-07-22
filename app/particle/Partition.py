@@ -23,6 +23,7 @@ class Partition:
         partitions[thread_num] = self
 
     def update_neighbor_thread_set(self):
+        #TODO: FIX NUM_THREADS
         # If partition 0 and partition 1 is active
         if self.thread_num is 0 and partitions[1].active
             self.neighbor_threads = set(1)
@@ -70,9 +71,24 @@ class Partition:
         right = set()
         left = set()
         for particle in self.particles:
-            if particle.position[0] + particle.radius + max_radius > self.end_x:
+            if particle.position[0] + particle.radius + particle.max_radius > self.end_x:
                 right.add(particle)
-            elif particle.position[0] - particle.radius - max_radius < self.start_x:
+            elif particle.position[0] - particle.radius - particle.max_radius < self.start_x:
                 left.add(particle)
         return (right, left)
 
+    def _able(self, active):
+        if self.thread_num is 0:
+            partitions[thread_num + 1].update_neighbor_thread_set()
+        elif self.thread_num is num_threads - 1:
+            partitions[thread_num - 1].update_neighbor_thread_set()
+        else:
+            partitions[thread_num + 1].update_neighbor_thread_set()
+            partitions[thread_num - 1].update_neighbor_thread_set()
+        self.active = active
+
+    def enable(self):
+        self._able(True)
+
+    def disable(self):
+        self._able(False)
