@@ -15,8 +15,7 @@ class Partition:
 
         self.thread_num = thread_num
         self.particles = set()
-        self.previous_neighbor_particles = set()
-        self.next_neighbor_particles = set()
+        self.neighbor_particles = set()
         self.delta_x = simulation_width//params.num_threads
         self.start_x = self.delta_x*self.thread_num
         self.end_x = params.simulation_width if self.thread_num is params.num_active_workers else self.start_x + delta_x
@@ -80,7 +79,6 @@ class Partition:
         """
         right, left = self.handoff()
 
-        #TODO: DEAL WITH THE PARTICLES HANDED OFF HERE
         # Update neighbors with my particles
         if partition.previous_partition_is_active:
             params.comm.Send(left , dest = rank - 1)
@@ -91,13 +89,16 @@ class Partition:
         neighbor_particles = []
         if partition.previous_partition_is_active:
             params.comm.Recv(neighbor_particles, source = mpi.ANY_SOURCE)
+        self.neighbor_particles.add(particle for particle in neighbor_particles)
+
+        neighbor_particles = []
         if partition.next_partition_is_active:
             params.comm.Recv(neighbor_particles, source = mpi.ANY_SOURCE)
+        self.neighbor_particles.add(particle for particle in neighbor_particles)
 
     def interact_particles(self):
-        # TODO: Fix neighbor_particles
         for particle in self.particles:
-            particle.populate_neighbors(self.particles + neighbor_particles)
+            particle.populate_neighbors(self.particles + self.neighbor_particles)
         for particle in self.particles:
             particle.update_velocity()
         for particle in self.particles:
@@ -106,24 +107,35 @@ class Partition:
     def exchange_particles(self):
         """Send particles that should now belong to neighboring partitions to
         neighbors, and receive any particles that now belong to this partition
-        """
-        right, left = [], []
-        for particle in particles:
-            # Check to see if the particle is in this partition still, if not,
-            # populate the lists
-            pass
 
-        #TODO: DEAL WITH THE PARTICLES HANDED OFF HERE
+        The sending partition updates the Particle's internal thread number
+        before sending the Particle to the other partition
+        """
+        right, left = set(), set()
+        for particle in particles:
+            location = self.particle_is_not_in_range(particle)
+            if location is -1:
+                left.append(particle)
+                particle.thread_num -= 1
+            elif location is 1:
+                right.append(particle)
+                particle.thread_num += 1
+        self.remove_particles(left)
+        self.remove_particles(right)
+
         # Send neighbors their new particles
         if partition.previous_partition_is_active:
-            params.comm.Send(left , dest = rank - 1)
+            params.comm.Send(left , dest = params.rank - 1)
         if partition.next_partition_is_active:
-            params.comm.Send(right, dest = rank + 1)
+            params.comm.Send(right, dest = params.rank + 1)
 
         # Receive particles from neighbors
         new_particles = []
         if partition.previous_partition_is_active:
             params.comm.Recv(new_particles, source = mpi.ANY_SOURCE)
+        partition.add_particles(new_particles)
+
+        new_particles = []
         if partition.next_partition_is_active:
             params.comm.Recv(new_particles, source = mpi.ANY_SOURCE)
         partition.add_particles(new_particles)

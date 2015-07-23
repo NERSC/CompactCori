@@ -15,7 +15,7 @@ import params
 import argparse
 import random
 import math
-import numpy as np
+#import numpy as np
 import threading
 import json
 from urllib.parse import urlparse
