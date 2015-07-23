@@ -22,9 +22,9 @@ from urllib.parse import urlparse
 from http.server import BaseHTTPRequestHandler
 from mpi4py import MPI as mpi
 
-comm = mpi.COMM_WORLD
-rank = comm.Get_rank()
-num_threads = comm.Get_size()
+params.comm = mpi.COMM_WORLD
+params.rank = params.comm.Get_rank()
+params.num_threads = params.comm.Get_size()
 
 # Parse arguments
 parser = argparse.ArgumentParser()
@@ -51,10 +51,9 @@ params.dt = args.dt if args.dt else 0.0005
 params.num_active_workers = 0
 params.partitions = []
 
-# OBO?
-for i in range(1,num_threads):
-    partitions.append(Partition(i, False, simulation_width))
-paritions.append(Partition(num_threads, True, simulation-width))
+# OOB?
+for i in range(1, params.num_threads + 1):
+    params.partitions[i] = Partition(i)
 
 # Create Particles for Partitions
 for i in range(num_particles):
@@ -73,57 +72,16 @@ def timestep():
     if rank is 0:
         particles = []
         buff = []
-        for i in range(1,num_threads):
-            comm.Recv(buff, source = mpi.ANY_SOURCE)
+        for i in range(1, params.num_threads):
+            params.comm.Recv(buff, source = mpi.ANY_SOURCE)
             particles += buff
     else:
         partition = partitions[rank]
-        partition.update_neighbor_thread_set()
+        partition.send_and_receive_neighboring_particles()
+        partition.interact_particles()
+        partition.exchange_particles()
+        partition.update_master()
 
-        right, left = partition.handoff()
-
-        # Update neighbors with my particles
-        if partition.previous_partition_is_active:
-            comm.Send(left , dest = rank - 1)
-        if partition.next_partition_is_active:
-            comm.Send(right, dest = rank + 1)
-        # Receive particles from neighbors
-        neighbor_particles = []
-        if partition.previous_partition_is_active:
-            comm.Recv(neighbor_particles, source = mpi.ANY_SOURCE)
-        if partition.next_partition_is_active:
-            comm.Recv(neighbor_particles, source = mpi.ANY_SOURCE)
-
-        # Do computation
-        for particle in partition.particles:
-            particle.populate_neighbors(partition.particles + neighbor_particles)
-        for particle in partition.particles:
-            particle.update_velocity()
-        for particle in partition.particles:
-            particle.update_position(dt)
-
-        right, left = [], []
-        for particle in particles:
-            # Check to see if the particle is in this partition still, if not,
-            # populate the lists
-            pass
-
-        # Send neighbors their new particles
-        if partition.previous_partition_is_active:
-            comm.Send(left , dest = rank - 1)
-        if partition.next_partition_is_active:
-            comm.Send(right, dest = rank + 1)
-
-        # Receive particles from neighbors
-        new_particles = []
-        if partition.previous_partition_is_active:
-            comm.Recv(new_particles, source = mpi.ANY_SOURCE)
-        if partition.next_partition_is_active:
-            comm.Recv(new_particles, source = mpi.ANY_SOURCE)
-        partition.add_particles(new_particles)
-
-        # Update root
-        comm.Send(partition.particles)
 
 class Server(BaseHTTPRequestHandler):
     def do_GET(self):

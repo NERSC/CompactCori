@@ -10,7 +10,6 @@ class Partition:
     Invariant: If Partition i is active (that is, if there are i threads working
     on the simulation), then for all partitions j < i, j is active as well
     """
-    partitions = {}
     def __init__(self, thread_num):
         util.validate_int(thread_num)
 
@@ -18,21 +17,18 @@ class Partition:
         self.particles = set()
         self.previous_neighbor_particles = set()
         self.next_neighbor_particles = set()
-        self.delta_x = simulation_width//num_threads
+        self.delta_x = simulation_width//params.num_threads
         self.start_x = self.delta_x*self.thread_num
         self.end_x = params.simulation_width if self.thread_num is params.num_active_workers else self.start_x + delta_x
 
-        # Add self to global list of partitions
-        # Consider changing to global params instead of static
-        Partition.partitions[self.thread_num] = self
-        Partition.num_active_workers += 1
+        params.num_active_workers += 1
 
     def add_particles(self, particle_set):
         util.validate_particle_set(particle_set)
         for particle in particle_set:
             particle.thread_num = self.thread_num
         self.particles.union(particle_set)
-    
+
     def add_particle(self, particle):
         self.particles.add(particle)
 
@@ -76,4 +72,63 @@ class Partition:
 
     def next_partition_is_active(self):
         return self.thread_num + 1 <= Partition.num_active_workers
+
+    def send_and_receive_neighboring_particles(self):
+        """Send particles that may interact with another partitions particles,
+        and receive other partitions' particles that may interact with this
+        partition's particles
+        """
+        right, left = self.handoff()
+
+        #TODO: DEAL WITH THE PARTICLES HANDED OFF HERE
+        # Update neighbors with my particles
+        if partition.previous_partition_is_active:
+            params.comm.Send(left , dest = rank - 1)
+        if partition.next_partition_is_active:
+            params.comm.Send(right, dest = rank + 1)
+
+        # Receive particles from neighbors
+        neighbor_particles = []
+        if partition.previous_partition_is_active:
+            params.comm.Recv(neighbor_particles, source = mpi.ANY_SOURCE)
+        if partition.next_partition_is_active:
+            params.comm.Recv(neighbor_particles, source = mpi.ANY_SOURCE)
+
+    def interact_particles(self):
+        # TODO: Fix neighbor_particles
+        for particle in self.particles:
+            particle.populate_neighbors(self.particles + neighbor_particles)
+        for particle in self.particles:
+            particle.update_velocity()
+        for particle in self.particles:
+            particle.update_position(dt)
+
+    def exchange_particles(self):
+        """Send particles that should now belong to neighboring partitions to
+        neighbors, and receive any particles that now belong to this partition
+        """
+        right, left = [], []
+        for particle in particles:
+            # Check to see if the particle is in this partition still, if not,
+            # populate the lists
+            pass
+
+        #TODO: DEAL WITH THE PARTICLES HANDED OFF HERE
+        # Send neighbors their new particles
+        if partition.previous_partition_is_active:
+            params.comm.Send(left , dest = rank - 1)
+        if partition.next_partition_is_active:
+            params.comm.Send(right, dest = rank + 1)
+
+        # Receive particles from neighbors
+        new_particles = []
+        if partition.previous_partition_is_active:
+            params.comm.Recv(new_particles, source = mpi.ANY_SOURCE)
+        if partition.next_partition_is_active:
+            params.comm.Recv(new_particles, source = mpi.ANY_SOURCE)
+        partition.add_particles(new_particles)
+
+    def update_master(self):
+        """Update the master node with new particles"""
+        params.comm.Send(self.particles)
 
