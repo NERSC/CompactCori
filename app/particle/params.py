@@ -2,7 +2,6 @@
 """Global parameters"""
 
 num_particles = None
-radius = None
 simulation_height = None
 simulation_width = None
 simulation_depth = None

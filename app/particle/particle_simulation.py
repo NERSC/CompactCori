@@ -15,7 +15,6 @@ import params
 import argparse
 import random
 import math
-#import numpy as np
 import threading
 import json
 from urllib.parse import urlparse
@@ -30,8 +29,6 @@ params.num_threads = params.comm.Get_size()
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--numparticles", type=int,
         help = "number of particles in simulation")
-parser.add_argument("-r", "--radius", type=int,
-        help = "radius of particle interaction")
 parser.add_argument("--height", type=int,
         help = "height of simulation ")
 parser.add_argument("--width", type=int,
@@ -43,13 +40,12 @@ parser.add_argument("-d", "--dt", type=float,
 args = parser.parse_args()
 
 params.num_particles = args.numparticles if args.numparticles else 20
-params.radius = args.radius if args.radius else 100
 params.simulation_height = args.height if args.height else 1000
 params.simulation_width = args.width if args.width else 1000
 params.simulation_depth = args.depth if args.depth else 1000
 params.dt = args.dt if args.dt else 0.0005
 params.num_active_workers = 0
-params.partitions = []
+params.partitions = {}
 
 # OOB?
 for i in range(1, params.num_threads + 1):
@@ -57,10 +53,14 @@ for i in range(1, params.num_threads + 1):
 
 # Create Particles for Partitions
 for i in range(num_particles):
-    position = [0, 0, 0]
-    velocity = [0, 0, 0]
+    position = [random.randint(0,params.simulation_width - 1),
+                random.randint(0,params.simulation_height - 1),
+                random.randint(0,params.simulation_depth - 1)]
+    velocity = [random.randint(0,10),
+                random.randint(0,10),
+                random.randint(0,10)]
     mass = 0
-    radius = 0
+    radius = random.randint(0, params.max_radius)
     if radius > params.max_radius:
         util.debug("Radius is greater than 1/32 of the simulation")
     thread_num = params.determine_particle_thread_num(position[0])
@@ -76,7 +76,7 @@ def timestep():
             params.comm.Recv(buff, source = mpi.ANY_SOURCE)
             particles += buff
     else:
-        partition = partitions[rank]
+        partition = params.partitions[rank]
         partition.send_and_receive_neighboring_particles()
         partition.interact_particles()
         partition.exchange_particles()
