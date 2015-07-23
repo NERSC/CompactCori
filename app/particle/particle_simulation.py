@@ -10,6 +10,7 @@ Threads in mpi4py are 0-indexed
 import Partition
 import Particle
 import util
+import params
 
 import argparse
 import random
@@ -41,20 +42,15 @@ parser.add_argument("-d", "--dt", type=float,
         help = "time constant")
 args = parser.parse_args()
 
-num_particles = args.numparticles if args.numparticles else 20
-radius = args.radius if args.radius else 100
-simulation_height = args.height if args.height else 1000
-simulation_width = args.width if args.width else 1000
-simulation_depth = args.depth if args.depth else 1000
-dt = args.dt if args.dt else 0.0005
+params.num_particles = args.numparticles if args.numparticles else 20
+params.radius = args.radius if args.radius else 100
+params.simulation_height = args.height if args.height else 1000
+params.simulation_width = args.width if args.width else 1000
+params.simulation_depth = args.depth if args.depth else 1000
+params.dt = args.dt if args.dt else 0.0005
+params.num_active_workers = 0
+params.partitions = []
 
-particles = []
-
-
-num_active_workers = num_threads - 1
-
-# Create Partitions and set neighbors
-partitions = []
 # OBO?
 for i in range(1,num_threads):
     partitions.append(Partition(i, False, simulation_width))
@@ -66,7 +62,9 @@ for i in range(num_particles):
     velocity = [0, 0, 0]
     mass = 0
     radius = 0
-    thread_num = determine_particle_thread_num(position[0])
+    if radius > params.max_radius:
+        util.debug("Radius is greater than 1/32 of the simulation")
+    thread_num = params.determine_particle_thread_num(position[0])
     new_particle = Particle(i, thread_num, position, velocity, mass, radius)
     partitions[thread_num].add_particle(new_particle)
 

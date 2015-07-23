@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import util
+import params
 
 class Partition:
     """Partition class, where each Partition corresponds to the area of the
@@ -10,11 +11,7 @@ class Partition:
     on the simulation), then for all partitions j < i, j is active as well
     """
     partitions = {}
-    num_active_workers = 0
-    simulation_width = None
-    max_radius = None
-    def __init__(self, thread_num, last = False, simulation_width = None,
-            max_radius = None):
+    def __init__(self, thread_num):
         util.validate_int(thread_num)
 
         self.thread_num = thread_num
@@ -23,11 +20,12 @@ class Partition:
         self.next_neighbor_particles = set()
         self.delta_x = simulation_width//num_threads
         self.start_x = self.delta_x*self.thread_num
-        self.end_x = simulation_width if last else self.start_x + delta_x
+        self.end_x = params.simulation_width if self.thread_num is params.num_active_workers else self.start_x + delta_x
 
         # Add self to global list of partitions
+        # Consider changing to global params instead of static
         Partition.partitions[self.thread_num] = self
-        Parittion.num_active_workers += 1
+        Partition.num_active_workers += 1
 
     def add_particles(self, particle_set):
         util.validate_particle_set(particle_set)
@@ -67,9 +65,9 @@ class Partition:
         right = set()
         left = set()
         for particle in self.particles:
-            if particle.position[0] + particle.radius + particle.max_radius > self.end_x:
+            if particle.position[0] + particle.radius + params.max_radius > self.end_x:
                 right.add(particle)
-            elif particle.position[0] - particle.radius - particle.max_radius < self.start_x:
+            elif particle.position[0] - particle.radius - params.max_radius < self.start_x:
                 left.add(particle)
         return (right, left)
 

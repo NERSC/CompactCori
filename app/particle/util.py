@@ -1,7 +1,6 @@
 #!/usr/bin/python
 """Utility functions"""
 
-### General Utility Functions ###
 def validate_int(*args):
     for arg in args:
         if type(arg) is not int:
@@ -34,7 +33,3 @@ def error(err, string):
     CSI="\x1B["
     print(CSI + "31;31m" + "[ERROR]    " + string + CSI + "31;0m")
     raise err(CSI + "31;31m" + string + CSI + "31;0m")
-
-### MD-Specific Functions ###
-def determine_particle_thread_num(x_position, width):
-    return math.ceil((x_position/simulation*width)*num_active_workers)

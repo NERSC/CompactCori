@@ -1,12 +1,12 @@
 #!/usr/bin/python
 
 import util
+import params
 
 class Particle:
     """Particle class for MD simulation."""
-    max_radius = None
     def __init__(self, particle_id, thread_num, position, velocity, mass,
-                radius, max_radius = None):
+            radius):
         # TODO: Add validation of list length
         util.validate_list(position, velocity)
         util.validate_int(particle_id, thread_num, mass, radius)
@@ -18,8 +18,6 @@ class Particle:
         self.mass = mass
         self.radius = radius
         self.neighbors = None
-
-        Particle.max_radius = max_radius if max_radius else Particle.max_radius
 
     def euclidean_distance_to(self, particle):
         x = abs(self.position[0] - particle.position[0])
@@ -64,9 +62,9 @@ class Particle:
             util.debug("A particle is moving a distance of more than self.radius")
 
         # Bounce particles off edge of simulation
+        simulation = [params.simulation_width, params.simulation_height, params.simulation_depth]
         for i in range(3):
-            while self.position[i] < i or self.position[i] > simulation_width:
+            while self.position[i] < i or self.position[i] > simulation[i]:
                 self.velocity[i] *= -1
                 self.position[i] = self.position[i]*-1 if self.position[i] < 0\
-                    else 2*simulation_width - self.position[i]
-
+                    else 2*simulation[i] - self.position[i]
