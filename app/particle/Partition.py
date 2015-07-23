@@ -11,6 +11,7 @@ class Partition:
     otherwise be ignored due to floor
     """
     partitions = {}
+    num_active_workers = 0
     def __init__(self, thread_num):
         validate_int(thread_num)
 
@@ -19,29 +20,31 @@ class Partition:
         self.delta_x = simulation_width//num_threads
         self.start_x = self.delta_x*self.thread_num
         self.end_x = self.start_x + delta_x
-        self.active = True
-        partitions[thread_num] = self
+
+        # Add self to global list of partitions
+        Partition.partitions[thread_num] = self
+        Parittion.num_active_workers += 1
 
     def update_neighbor_thread_set(self):
-        #TODO: FIX NUM_THREADS
-        # If partition 0 and partition 1 is active
-        if self.thread_num is 0 and partitions[1].active:
-            self.neighbor_threads = set(1)
-        # If partition 0 and partition 1 is inactive
-        elif self.thread_num is 0 and not partitions[1].active:
+        # If partition 0 and partition 2 is active
+        if self.thread_num is 1 and Partition.num_active_workers is 1:
             self.neighbor_threads = set()
+        # If partition 0 and partition 2 is inactive
+        elif self.thread_num is 1 and Partition.num_active_workers is 2:
+            self.neighbor_threads = set(2)
         # If last partition
-        elif self.thread_num is num_threads - 1:
-            self.neighbor_threads = set(num_threads - 2)
-        # If any other partition and the next partition is inactive
-        elif not partitions[thread_num + 1].active:
-            self.neighbor_threads = set(thread_num - 1)
-        # If any other partition and the next partition is active
+        elif self.thread_num is num_active_workers:
+            self.neighbor_threads = set(Partition.num_active_workers - 1)
+        # All other cases
         else:
-            self.neighbor_threads = set(thread_num - 1, thread_num + 1)
+            self.neighbor_threads = set(
+                    Partition.num_active_workers - 1,
+                    Partition.num_active_workers + 1)
 
     def add_particles(self, particle_set):
         validate_particle_set(particle_set)
+        for particle in particle_set:
+            particle.thread_num = self.thread_num
         self.particles.union(particle_set)
 
     def remove_particles(self, particle_set):
@@ -50,6 +53,8 @@ class Partition:
 
     def set_particles(self, particle_set):
         validate_particle_set(particle_set)
+        for particle in particle_set:
+            particle.thread_num = self.thread_num
         self.particles = particle_set
 
     def is_not_in_range(self, particle):
@@ -67,7 +72,7 @@ class Partition:
         else:
             return 0
 
-    def handoff(self):
+    def handoff_neighboring_particles(self):
         right = set()
         left = set()
         for particle in self.particles:
@@ -77,18 +82,9 @@ class Partition:
                 left.add(particle)
         return (right, left)
 
-    def _able(self, active):
-        if self.thread_num is 0:
-            partitions[thread_num + 1].update_neighbor_thread_set()
-        elif self.thread_num is num_threads - 1:
-            partitions[thread_num - 1].update_neighbor_thread_set()
-        else:
-            partitions[thread_num + 1].update_neighbor_thread_set()
-            partitions[thread_num - 1].update_neighbor_thread_set()
-        self.active = active
+    def previous_partition_is_active(self):
+        return self.thread_num is not 1
 
-    def enable(self):
-        self._able(True)
+    def next_partition_is_active(self):
+        return self.thread_num + 1 <= Partition.num_active_workers
 
-    def disable(self):
-        self._able(False)

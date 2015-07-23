@@ -83,16 +83,23 @@ def error(err, string):
     print(CSI + "31;31m" + "[ERROR]    " + string + CSI + "31;0m")
     raise err(CSI + "31;31m" + string + CSI + "31;0m")
 
+
+num_active_workers = num_threads - 1
+
 # Create Partitions and set neighbors
 partitions = []
 for i in range(num_threads):
     partitions.append(Partition(i))
 
-# Create Particles for Parallel Processes
-for _ in range(num_particles):
-    curr_particle = Particle()
+# Create Particles for Partitions
+for i in range(num_particles):
+    position = [0, 0, 0]
+    velocity = [0, 0, 0]
+    mass = 0
+    radius = 0
+    curr_particle = Particle(i, )          # Fix constructor
 
-    particles.append(Particle())
+
 
 # One timestep
 def timestep():
@@ -109,13 +116,13 @@ def timestep():
         right, left = partition.handoff()
 
         # Update neighbors with my particles
-        if partitions[rank - 1].active:
+        if partition.previous_partition_is_active:
             comm.Send(left , dest = rank - 1)
-        if partitions[rank + 1].active:
+        if partition.next_partition_is_active:
             comm.Send(right, dest = rank + 1)
         # Receive particles from neighbors
         neighbor_particles = []
-        for _ in parition.neighbor_threads:
+        for _ in partition.neighbor_threads:
             comm.Recv(neighbor_particles, source = mpi.ANY_SOURCE)
 
         # Do computation
@@ -133,14 +140,14 @@ def timestep():
             pass
 
         # Send neighbors their new particles
-        if partitions[rank - 1].active:
+        if partition.previous_partition_is_active:
             comm.Send(left , dest = rank - 1)
-        if partitions[rank + 1].active:
+        if partition.next_partition_is_active:
             comm.Send(right, dest = rank + 1)
 
         # Receive particles from neighbors
         new_particles = []
-        for _ in parition.neighbor_threads:
+        for _ in partition.neighbor_threads:
             comm.Recv(new_particles, source = mpi.ANY_SOURCE)
         partition.add_particles(new_particles)
 
