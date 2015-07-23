@@ -9,6 +9,7 @@ Threads in mpi4py are 0-indexed
 """
 import Partition
 import Particle
+import util
 
 import argparse
 import random
@@ -49,47 +50,15 @@ dt = args.dt if args.dt else 0.0005
 
 particles = []
 
-# TODO: Remove typechecking for production
-def validate_int(*args):
-    for arg in args:
-        if type(arg) is not int:
-            error(ArgumentError, "incorrect type argument: " + type(arg) +
-                "was passed instead of a int")
-
-def validate_list(*args):
-    for arg in args:
-        if type(arg) is not list:
-            error(ArgumentError, "incorrect type argument: " + type(arg) +
-                "was passed instead of a int")
-
-def validate_particle_set(*args):
-    for arg in args:
-        if type(arg) is not set:
-            error(ArgumentError, "incorrect type argument: " + type(arg) +
-                "was passed instead of a set")
-        for obj in arg:
-            if type(obj) is not Particle:
-                error(ArgumentError, "Non-particle type in set; received a " +
-                        type(obj) + " instead of a Particle")
-
-def debug(string):
-    """Print a message in yellow to STDOUT"""
-    CSI="\x1B["
-    print(CSI + "31;93m" + "[DEBUG]    " + string + CSI + "31;0m")
-
-def error(err, string):
-    """Print a message in red to STDOUT and raise an exception"""
-    CSI="\x1B["
-    print(CSI + "31;31m" + "[ERROR]    " + string + CSI + "31;0m")
-    raise err(CSI + "31;31m" + string + CSI + "31;0m")
-
 
 num_active_workers = num_threads - 1
 
 # Create Partitions and set neighbors
 partitions = []
-for i in range(num_threads):
-    partitions.append(Partition(i))
+# OBO?
+for i in range(1,num_threads):
+    partitions.append(Partition(i, False, simulation_width))
+paritions.append(Partition(num_threads, True, simulation-width))
 
 # Create Particles for Partitions
 for i in range(num_particles):
@@ -97,9 +66,9 @@ for i in range(num_particles):
     velocity = [0, 0, 0]
     mass = 0
     radius = 0
-    curr_particle = Particle(i, )          # Fix constructor
-
-
+    thread_num = determine_particle_thread_num(position[0])
+    new_particle = Particle(i, thread_num, position, velocity, mass, radius)
+    partitions[thread_num].add_particle(new_particle)
 
 # One timestep
 def timestep():
@@ -122,7 +91,9 @@ def timestep():
             comm.Send(right, dest = rank + 1)
         # Receive particles from neighbors
         neighbor_particles = []
-        for _ in partition.neighbor_threads:
+        if partition.previous_partition_is_active:
+            comm.Recv(neighbor_particles, source = mpi.ANY_SOURCE)
+        if partition.next_partition_is_active:
             comm.Recv(neighbor_particles, source = mpi.ANY_SOURCE)
 
         # Do computation
@@ -147,7 +118,9 @@ def timestep():
 
         # Receive particles from neighbors
         new_particles = []
-        for _ in partition.neighbor_threads:
+        if partition.previous_partition_is_active:
+            comm.Recv(new_particles, source = mpi.ANY_SOURCE)
+        if partition.next_partition_is_active:
             comm.Recv(new_particles, source = mpi.ANY_SOURCE)
         partition.add_particles(new_particles)
 
@@ -166,7 +139,7 @@ class Server(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(message.encode("utf-8"))
         else:
-            debug("GET request sent to " + parsed_path)
+            util.debug("GET request sent to " + parsed_path)
 
     def do_POST(self):
         """Handle POST requests to the API endpoint"""
@@ -182,7 +155,7 @@ class Server(BaseHTTPRequestHandler):
 #            self.wfile.write(str(post_data).encode("utf-8"))
 #            self.wfile.write("\n".encode("utf-8"))
         else:
-            debug("POST request sent to " + parsed_path)
+            util.debug("POST request sent to " + parsed_path)
 
 endpoint = "{\n}"
 def main():

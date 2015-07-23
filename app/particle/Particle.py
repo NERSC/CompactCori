@@ -1,12 +1,15 @@
 #!/usr/bin/python
 
+import util
+
 class Particle:
     """Particle class for MD simulation."""
+    max_radius = None
     def __init__(self, particle_id, thread_num, position, velocity, mass,
-                radius):
+                radius, max_radius = None):
         # TODO: Add validation of list length
-        validate_list(position, velocity)
-        validate_int(particle_id, thread_num, mass, radius)
+        util.validate_list(position, velocity)
+        util.validate_int(particle_id, thread_num, mass, radius)
 
         self.particle_id = particle_id
         self.thread_num = thread_num
@@ -15,10 +18,8 @@ class Particle:
         self.mass = mass
         self.radius = radius
         self.neighbors = None
-        self.max_radius = min(simulation_width, simulation_height, simulation_depth)/32
 
-        if radius > self.max_radius:
-            debug("Radius is greater than 1/32 of the simulation")
+        Particle.max_radius = max_radius if max_radius else Particle.max_radius
 
     def euclidean_distance_to(self, particle):
         x = abs(self.position[0] - particle.position[0])
@@ -34,7 +35,7 @@ class Particle:
             if euclidean_distance < self.radius and particle is not self:
                 self.neighbors.append((particle, distances))
         if len(self.neighbors) > 1:
-            debug("There are multiple collisions happening at once")
+            util.debug("There are multiple collisions happening at once")
 
     def get_momentum(self):
         return tuple([velocity * self.mass for velocity in self.velocity])
@@ -60,7 +61,7 @@ class Particle:
         self.position[2] += delta[2]
 
         if any(d > self.radius for d in delta):
-            debug("A particle is moving a distance of more than self.radius")
+            util.debug("A particle is moving a distance of more than self.radius")
 
         # Bounce particles off edge of simulation
         for i in range(3):
@@ -68,3 +69,4 @@ class Particle:
                 self.velocity[i] *= -1
                 self.position[i] = self.position[i]*-1 if self.position[i] < 0\
                     else 2*simulation_width - self.position[i]
+
