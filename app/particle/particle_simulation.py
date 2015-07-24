@@ -82,6 +82,21 @@ def timestep():
         partition.exchange_particles()
         partition.update_master()
 
+def change_num_active_workers(new_num_active_workers):
+    if new_num_active_workers < 1 or new_num_active_workers > params.num_threads - 1:
+        util.debug("Invalid number of active workers requested: " + new_num_active_workers)
+
+    new_distribution = {}
+    for i in range(1, new_num_active_workers + 1):
+        new_distribution[i] = set()
+
+    for partition_id, partition in params.partitions:
+        for particle in partition.particles:
+            new_thread = params.determine_particle_thread_num(particle.position[0], new_num_active_workers)
+            particle.thread_num = new_thread
+            new_distribution[new_thread].add(particle)
+
+    #TODO: SEND SETS TO NEW PARTITIONS
 
 class Server(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -117,8 +132,10 @@ endpoint = "{\n}"
 def main():
     global endpoint
     from http.server import HTTPServer
-    server = HTTPServer(("127.0.0.1", 8080), Server)
-    print("Starting server, ^c to exit")
+
+    port_number = 8080
+    server = HTTPServer(("127.0.0.1", port_number), Server)
+    print("Starting server on port " +  port_number + ", ^c to exit")
     threading.Thread(target=server.serve_forever).start()
     while True:
         timestep()

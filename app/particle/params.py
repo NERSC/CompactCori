@@ -14,6 +14,6 @@ comm = None
 rank = None
 num_threads = None
 
-def determine_particle_thread_num(x_position):
+def determine_particle_thread_num(x_position, num_active_workers = num_active_workers):
     return math.ceil((x_position/simulation_width)*num_active_workers)
 
