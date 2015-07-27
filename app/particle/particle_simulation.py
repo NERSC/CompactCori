@@ -45,6 +45,7 @@ params.simulation_width = args.width if args.width else 1000
 params.simulation_depth = args.depth if args.depth else 1000
 params.dt = args.dt if args.dt else 0.0005
 params.num_active_workers = 0
+params.max_radius = min(simulation_width, simulation_height, simulation_depth)/32
 params.partitions = {}
 
 # OOB?

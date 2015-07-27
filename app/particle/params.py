@@ -8,7 +8,7 @@ simulation_depth = None
 dt = None
 num_active_workers = None
 partitions = {}
-max_radius = min(simulation_width, simulation_height, simulation_depth)/32
+max_radius = None
 
 comm = None
 rank = None
