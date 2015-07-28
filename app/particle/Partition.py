@@ -23,12 +23,16 @@ class Partition:
         params.num_active_workers += 1
 
     def add_particles(self, particle_set):
+        """ TODO: Is this method ever called?"""
         util.validate_particle_set(particle_set)
         for particle in particle_set:
-            particle.thread_num = self.thread_num
+            if particle.thread_num is not self.thread_num:
+                error("Thread numbers don't match")
         self.particles.union(particle_set)
 
     def add_particle(self, particle):
+        if particle.thread_num is not self.thread_num:
+            error("Thread numbers don't match")
         self.particles.add(particle)
 
     def remove_particles(self, particle_set):
@@ -38,7 +42,8 @@ class Partition:
     def set_particles(self, particle_set):
         util.validate_particle_set(particle_set)
         for particle in particle_set:
-            particle.thread_num = self.thread_num
+            if particle.thread_num is not self.thread_num:
+                error("Thread numbers don't match")
         self.particles = particle_set
 
     def is_not_in_range(self, particle):
@@ -144,3 +149,8 @@ class Partition:
         """Update the master node with new particles"""
         params.comm.Send(self.particles)
 
+    def receive_new_particles(self):
+        """Receive new particle set after changing the number of threads"""
+        new_particles = set()
+        params.comm.Recv(new_particles, source = 1)
+        self.set_particles(new_particles)

@@ -97,7 +97,15 @@ def change_num_active_workers(new_num_active_workers):
             particle.thread_num = new_thread
             new_distribution[new_thread].add(particle)
 
-    #TODO: SEND SETS TO NEW PARTITIONS
+    for i in range(1, new_num_active_workers + 1):
+        params.comm.Send(new_distribution[i], dest = i)
+
+def continue_with_same_number_of_workers():
+    """This is slow.  You should probably figure out a way to not send each
+    thread information it already has
+    """
+    for i in range(1, params.num_active_workers):
+        params.comm.Send(partitions[i].particles, dest = i)
 
 class Server(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -140,6 +148,12 @@ def main():
     threading.Thread(target=server.serve_forever).start()
     while True:
         timestep()
+
+        if params.new_num_active_workers is not params.num_active_workers:
+            change_num_active_workers(params.new_num_active_workers)
+        else:
+            continue_with_same_number_of_workers()
+
         # Use a copy of endpoint to prevent queries to endpoint from
         # receiving an in-progress timestep
         temp_endpoint = "{\n"
