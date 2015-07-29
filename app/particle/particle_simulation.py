@@ -2,10 +2,15 @@
 """A parallelized MD simulation in Python written for version 1 of the Compact Cori
 project at NERSC.
 
-This runs in O(n^2) time since all particles are compared to one another when
-locating in-range neighbors.
+Only the master node has an accurate params file.  Slaves know the number of
+active workers, but other parameters are not guaranteed to be accurate.
 
-Threads in mpi4py are 0-indexed
+Threads are 0-indexed
+
+The master node does not do any computational work.
+
+Threads 1-n correspond to the n partitions that do computational work.
+
 """
 import Partition
 import Particle
@@ -49,7 +54,7 @@ params.new_num_active_workers = 0
 params.max_radius = min(simulation_width, simulation_height, simulation_depth)/32
 params.partitions = {}
 
-# OOB?
+# Create partitions 1 through params.num_threads, inclusive
 for i in range(1, params.num_threads + 1):
     params.partitions[i] = Partition(i)
 
@@ -69,14 +74,16 @@ for i in range(num_particles):
     new_particle = Particle(i, thread_num, position, velocity, mass, radius)
     partitions[thread_num].add_particle(new_particle)
 
+def update_params():
+    params.comm.Bcast(params.num_active_workers)
+
 # One timestep
 def timestep():
     if rank is 0:
-        particles = []
-        buff = []
         for i in range(1, params.num_threads):
-            params.comm.Recv(buff, source = mpi.ANY_SOURCE)
-            particles += buff
+            new_particles = set()
+            params.comm.Recv(new_particles, source = mpi.ANY_SOURCE, status = status)
+            params.partitions[status.Get_Source()].particles = new_particles
     else:
         partition = params.partitions[rank]
         partition.send_and_receive_neighboring_particles()
@@ -148,8 +155,8 @@ def main():
     print("Starting server on port " +  port_number + ", ^c to exit")
     threading.Thread(target=server.serve_forever).start()
     while True:
+        update_params()
         timestep()
-
         if params.new_num_active_workers is not params.num_active_workers:
             change_num_active_workers(params.new_num_active_workers)
         else:
@@ -159,12 +166,12 @@ def main():
         # receiving an in-progress timestep
         temp_endpoint = "{\n"
         temp_endpoint += "\"params\":[\n"
-        temp_endpoint += "    \"num_particles\": " + params.num_particles + "\n"
-        temp_endpoint += "    \"num_active_workers\": " + params.num_active_workers + "\n"
-        temp_endpoint += "    \"simulation_height\": " + params.simulation_height + "\n"
-        temp_endpoint += "    \"simulation_width\": " + params.simulation_width + "\n"
-        temp_endpoint += "    \"simulation_depth\": " + params.simulation_depth + "\n"
-        temp_endpoint += "    \"simulation_depth\": " + params.simulation_depth + "\n"
+        temp_endpoint += "    \"num_particles\": " + params.num_particles + ",\n"
+        temp_endpoint += "    \"num_active_workers\": " + params.num_active_workers + ",\n"
+        temp_endpoint += "    \"simulation_height\": " + params.simulation_height + ",\n"
+        temp_endpoint += "    \"simulation_width\": " + params.simulation_width + ",\n"
+        temp_endpoint += "    \"simulation_depth\": " + params.simulation_depth + ",\n"
+        temp_endpoint += "    \"simulation_depth\": " + params.simulation_depth + ",\n"
         temp_endpoint += "]\n"
         temp_endpoint += "\"particles\":[\n"
         for particle in particles:

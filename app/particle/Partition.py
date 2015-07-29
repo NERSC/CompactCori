@@ -9,6 +9,10 @@ class Partition:
 
     Invariant: If Partition i is active (that is, if there are i threads working
     on the simulation), then for all partitions j < i, j is active as well
+
+    When changing the ownership of a particle, the sending partition always changes
+    the owner of each particle.  The reciving partition validates that the change
+    was made correctly.
     """
     def __init__(self, thread_num):
         util.validate_int(thread_num)
@@ -28,12 +32,12 @@ class Partition:
         util.validate_particle_set(particle_set)
         for particle in particle_set:
             if particle.thread_num is not self.thread_num:
-                error("Thread numbers don't match")
+                util.error("Thread numbers don't match")
         self.particles.union(particle_set)
 
     def add_particle(self, particle):
         if particle.thread_num is not self.thread_num:
-            error("Thread numbers don't match")
+            util.error("Thread numbers don't match")
         self.particles.add(particle)
 
     def remove_particles(self, particle_set):
@@ -44,7 +48,7 @@ class Partition:
         util.validate_particle_set(particle_set)
         for particle in particle_set:
             if particle.thread_num is not self.thread_num:
-                error("Thread numbers don't match")
+                util.error("Thread numbers don't match")
         self.particles = particle_set
 
     def is_not_in_range(self, particle):

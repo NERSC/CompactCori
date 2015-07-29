@@ -30,7 +30,7 @@ class Particle:
         self.neighbors = []
         for particle in particles:
             euclidean_distance, distances = self.euclidean_distance_to(particle)
-            if euclidean_distance < self.radius and particle is not self:
+            if euclidean_distance <= 0 and particle is not self:
                 self.neighbors.append((particle, distances))
         if len(self.neighbors) > 1:
             util.debug("There are multiple collisions happening at once")
