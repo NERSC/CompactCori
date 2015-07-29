@@ -21,6 +21,7 @@ class Partition:
         self.end_x = params.simulation_width if self.thread_num is params.num_active_workers else self.start_x + delta_x
 
         params.num_active_workers += 1
+        params.new_num_active_workers += 1
 
     def add_particles(self, particle_set):
         """ TODO: Is this method ever called?"""

@@ -45,6 +45,7 @@ params.simulation_width = args.width if args.width else 1000
 params.simulation_depth = args.depth if args.depth else 1000
 params.dt = args.dt if args.dt else 0.0005
 params.num_active_workers = 0
+params.new_num_active_workers = 0
 params.max_radius = min(simulation_width, simulation_height, simulation_depth)/32
 params.partitions = {}
 
@@ -157,9 +158,18 @@ def main():
         # Use a copy of endpoint to prevent queries to endpoint from
         # receiving an in-progress timestep
         temp_endpoint = "{\n"
+        temp_endpoint += "\"params\":[\n"
+        temp_endpoint += "    \"num_particles\": " + params.num_particles + "\n"
+        temp_endpoint += "    \"num_active_workers\": " + params.num_active_workers + "\n"
+        temp_endpoint += "    \"simulation_height\": " + params.simulation_height + "\n"
+        temp_endpoint += "    \"simulation_width\": " + params.simulation_width + "\n"
+        temp_endpoint += "    \"simulation_depth\": " + params.simulation_depth + "\n"
+        temp_endpoint += "    \"simulation_depth\": " + params.simulation_depth + "\n"
+        temp_endpoint += "]\n"
+        temp_endpoint += "\"particles\":[\n"
         for particle in particles:
-            temp_endpoint += json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=2)
-        temp_endpoint += "\n}"
+            temp_endpoint += "    " + json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=2)
+        temp_endpoint += "\n]\n}"
         endpoint = temp_endpoint
 
 if __name__ == "__main__":

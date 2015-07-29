@@ -7,6 +7,7 @@ simulation_width = None
 simulation_depth = None
 dt = None
 num_active_workers = None
+new_num_active_workers = None
 partitions = {}
 max_radius = None
 
