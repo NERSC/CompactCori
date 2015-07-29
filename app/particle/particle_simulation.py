@@ -2,7 +2,6 @@
 """
 A parallelized MD simulation in Python written for version 1 of the Compact Cory
 project at NERSC.
-
 This runs in O(n^2) time since all particles are compared to one another when
 locating in-range neighbors.
 """
