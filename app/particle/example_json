@@ -1,0 +1,30 @@
+{
+"params":[
+    "num_particles" 1000,
+    "num_active_workers": 15,
+    "simulation_height": 1000,
+    "simulation_width": 1000,
+    "simulation_depth": 1000,
+]
+"particles":[
+    {
+        "particle_id": 5,
+        "thread_num": 3,
+        "position": [13.1249,53.289,530.235],
+        "velocity":[1.35,4.234,935.90],
+        "mass":13,
+        "radius":78,
+        "neighbors":[]
+    },
+    {
+        "particle_id": 58,
+        "thread_num": 8,
+        "position": [56,48.563,985],
+        "velocity":[-1.1034,9.45,0.1],
+        "mass":15,
+        "radius":6,
+        "neighbors":[]
+    }
+]
+}
+
