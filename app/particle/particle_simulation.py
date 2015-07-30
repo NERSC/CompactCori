@@ -10,7 +10,6 @@ Threads are 0-indexed
 The master node does not do any computational work.
 
 Threads 1-n correspond to the n partitions that do computational work.
-
 """
 import Partition
 import Particle
@@ -79,41 +78,48 @@ def update_params():
 
 # One timestep
 def timestep():
-    if rank is 0:
+    """Only do something as a slave if an active worker"""
+    if params.rank is 0:
         for i in range(1, params.num_threads):
             new_particles = set()
             params.comm.Recv(new_particles, source = mpi.ANY_SOURCE, status = status)
             params.partitions[status.Get_Source()].particles = new_particles
-    else:
-        partition = params.partitions[rank]
+    elif params.rank <= params.num_active_workers:
+        partition = params.partitions[params.rank]
         partition.send_and_receive_neighboring_particles()
         partition.interact_particles()
         partition.exchange_particles()
         partition.update_master()
 
 def change_num_active_workers(new_num_active_workers):
-    if new_num_active_workers < 1 or new_num_active_workers > params.num_threads - 1:
-        util.debug("Invalid number of active workers requested: " + new_num_active_workers)
+    if params.rank is 0:
+        if new_num_active_workers < 1 or new_num_active_workers > params.num_threads - 1:
+            util.debug("Invalid number of active workers requested: " + new_num_active_workers)
 
-    new_distribution = {}
-    for i in range(1, new_num_active_workers + 1):
-        new_distribution[i] = set()
+        new_distribution = {}
+        for i in range(1, new_num_active_workers + 1):
+            new_distribution[i] = set()
 
-    for partition_id, partition in params.partitions:
-        for particle in partition.particles:
-            new_thread = params.determine_particle_thread_num(particle.position[0], new_num_active_workers)
-            particle.thread_num = new_thread
-            new_distribution[new_thread].add(particle)
+        for partition_id, partition in params.partitions:
+            for particle in partition.particles:
+                new_thread = params.determine_particle_thread_num(particle.position[0], new_num_active_workers)
+                particle.thread_num = new_thread
+                new_distribution[new_thread].add(particle)
 
-    for i in range(1, new_num_active_workers + 1):
-        params.comm.Send(new_distribution[i], dest = i)
+        for i in range(1, new_num_active_workers + 1):
+            params.comm.Send(new_distribution[i], dest = i)
+    else:
+        new_particles = set()
+        params.comm.Recv(new_particles, source = 0)
+        params.partitions[params.rank].particles = new_particles
+        params.partitions[params.rank].update_end_x()
 
-def continue_with_same_number_of_workers():
-    """This is slow.  You should probably figure out a way to not send each
-    thread information it already has
-    """
-    for i in range(1, params.num_active_workers):
-        params.comm.Send(partitions[i].particles, dest = i)
+#def continue_with_same_number_of_workers():
+#    """This is slow.  You should probably figure out a way to not send each
+#    thread information it already has
+#    """
+#    for i in range(1, params.num_active_workers):
+#        params.comm.Send(partitions[i].particles, dest = i)
 
 class Server(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -155,12 +161,12 @@ def main():
     print("Starting server on port " +  port_number + ", ^c to exit")
     threading.Thread(target=server.serve_forever).start()
     while True:
-        update_params()
         timestep()
+        update_params()
         if params.new_num_active_workers is not params.num_active_workers:
             change_num_active_workers(params.new_num_active_workers)
-        else:
-            continue_with_same_number_of_workers()
+#        else:
+#            continue_with_same_number_of_workers()
 
         # Use a copy of endpoint to prevent queries to endpoint from
         # receiving an in-progress timestep

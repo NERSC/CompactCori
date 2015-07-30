@@ -27,6 +27,12 @@ class Partition:
         params.num_active_workers += 1
         params.new_num_active_workers += 1
 
+    def update_end_x(self):
+        """This method is used to pick volume that does not evenly divide into
+        the number of active workers when the number of workers changes
+        """
+        self.end_x = params.simulation_width if self.thread_num is params.num_active_workers else self.start_x + delta_x
+
     def add_particles(self, particle_set):
         """ TODO: Is this method ever called?"""
         util.validate_particle_set(particle_set)
@@ -52,7 +58,7 @@ class Partition:
         self.particles = particle_set
 
     def is_not_in_range(self, particle):
-        """Naively assumes that the particle will never be travelling fast
+        """Assumes that the particle will never be travelling fast
         enough to jump more than one partition at a time.
 
         Returns -1 if the particle is in the previous partition
