@@ -10,9 +10,11 @@ Threads are 0-indexed
 The master node does not do any computational work.
 
 Threads 1-n correspond to the n partitions that do computational work.
+
+Speedup could possibly occur by using numpy instead of arrays/lists
 """
-import Partition
-import Particle
+from Partition import Partition
+from Particle import Particle
 import util
 import params
 
@@ -25,9 +27,11 @@ from urllib.parse import urlparse
 from http.server import BaseHTTPRequestHandler
 from mpi4py import MPI as mpi
 
+params.mpi = mpi
 params.comm = mpi.COMM_WORLD
 params.rank = params.comm.Get_rank()
 params.num_threads = params.comm.Get_size()
+params.mpi_status = mpi.Status()
 
 # Parse arguments
 parser = argparse.ArgumentParser()
@@ -50,40 +54,39 @@ params.simulation_depth = args.depth if args.depth else 1000
 params.dt = args.dt if args.dt else 0.0005
 params.num_active_workers = 0
 params.new_num_active_workers = 0
-params.max_radius = min(simulation_width, simulation_height, simulation_depth)/32
+params.max_radius = min(params.simulation_width, params.simulation_height, params.simulation_depth)//32
 params.partitions = {}
 
-# Create partitions 1 through params.num_threads, inclusive
-for i in range(1, params.num_threads + 1):
+# Create partitions 1 through params.num_threads - 1
+for i in range(1, params.num_threads):
     params.partitions[i] = Partition(i)
 
 # Create Particles for Partitions
-for i in range(num_particles):
-    position = [random.randint(0,params.simulation_width - 1),
-                random.randint(0,params.simulation_height - 1),
-                random.randint(0,params.simulation_depth - 1)]
-    velocity = [random.randint(0,10),
-                random.randint(0,10),
-                random.randint(0,10)]
-    mass = 0
+for i in range(params.num_particles):
     radius = random.randint(0, params.max_radius)
+    position = [random.randint(radius, params.simulation_width - 1),
+                random.randint(radius, params.simulation_height - 1),
+                random.randint(radius, params.simulation_depth - 1)]
+    velocity = [random.randint(0,5),
+                random.randint(0,5),
+                random.randint(0,5)]
+    mass = random.randint(1,10)
     if radius > params.max_radius:
         util.debug("Radius is greater than 1/32 of the simulation")
-    thread_num = params.determine_particle_thread_num(position[0])
+    thread_num = util.determine_particle_thread_num(position[0])
     new_particle = Particle(i, thread_num, position, velocity, mass, radius)
-    partitions[thread_num].add_particle(new_particle)
+    params.partitions[thread_num].add_particle(new_particle)
 
 def update_params():
-    params.comm.Bcast(params.num_active_workers)
+    params.comm.bcast(params.num_active_workers)
 
 # One timestep
 def timestep():
     """Only do something as a slave if an active worker"""
     if params.rank is 0:
         for i in range(1, params.num_threads):
-            new_particles = set()
-            params.comm.Recv(new_particles, source = mpi.ANY_SOURCE, status = status)
-            params.partitions[status.Get_Source()].particles = new_particles
+            new_particles = params.comm.recv(source = mpi.ANY_SOURCE, status = params.mpi_status, tag = 00)
+            params.partitions[params.mpi_status.Get_source()].particles = new_particles
     elif params.rank <= params.num_active_workers:
         partition = params.partitions[params.rank]
         partition.send_and_receive_neighboring_particles()
@@ -102,24 +105,14 @@ def change_num_active_workers(new_num_active_workers):
 
         for partition_id, partition in params.partitions:
             for particle in partition.particles:
-                new_thread = params.determine_particle_thread_num(particle.position[0], new_num_active_workers)
+                new_thread = util.determine_particle_thread_num(particle.position[0], new_num_active_workers)
                 particle.thread_num = new_thread
                 new_distribution[new_thread].add(particle)
 
         for i in range(1, new_num_active_workers + 1):
-            params.comm.Send(new_distribution[i], dest = i)
+            params.comm.send(new_distribution[i], dest = i, tag = 11)
     else:
-        new_particles = set()
-        params.comm.Recv(new_particles, source = 0)
-        params.partitions[params.rank].particles = new_particles
-        params.partitions[params.rank].update_end_x()
-
-#def continue_with_same_number_of_workers():
-#    """This is slow.  You should probably figure out a way to not send each
-#    thread information it already has
-#    """
-#    for i in range(1, params.num_active_workers):
-#        params.comm.Send(partitions[i].particles, dest = i)
+        params.partitions[params.rank].receive_new_particles()
 
 class Server(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -127,13 +120,14 @@ class Server(BaseHTTPRequestHandler):
         global endpoint
         parsed_path = urlparse(self.path)
         if "/api/v1/get_particles" in parsed_path:
-            message = "\r\n".join(endpoint)
+#            message = "\r\n".join(endpoint)
+            message = "\r\n".join("TEST MESSAGE")
             self.send_response(200)
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(message.encode("utf-8"))
         else:
-            util.debug("GET request sent to " + parsed_path)
+            util.info("GET request sent to " + parsed_path)
 
     def do_POST(self):
         """Handle POST requests to the API endpoint"""
@@ -149,7 +143,7 @@ class Server(BaseHTTPRequestHandler):
 #            self.wfile.write(str(post_data).encode("utf-8"))
 #            self.wfile.write("\n".encode("utf-8"))
         else:
-            util.debug("POST request sent to " + parsed_path)
+            util.info("POST request sent to " + parsed_path)
 
 endpoint = "{\n}"
 def main():
@@ -158,9 +152,13 @@ def main():
 
     port_number = 8080
     server = HTTPServer(("127.0.0.1", port_number), Server)
-    print("Starting server on port " +  port_number + ", ^c to exit")
-    threading.Thread(target=server.serve_forever).start()
+#    print("Starting server on port " +  str(port_number) + ", ^c to exit")
+#    threading.Thread(target=server.serve_forever).start()
+
+    count = 0
     while True:
+        util.info("Timestep " + str(count))
+        count += 1
         timestep()
         update_params()
         if params.new_num_active_workers is not params.num_active_workers:
@@ -172,16 +170,17 @@ def main():
         # receiving an in-progress timestep
         temp_endpoint = "{\n"
         temp_endpoint += "\"params\":[\n"
-        temp_endpoint += "    \"num_particles\": " + params.num_particles + ",\n"
-        temp_endpoint += "    \"num_active_workers\": " + params.num_active_workers + ",\n"
-        temp_endpoint += "    \"simulation_height\": " + params.simulation_height + ",\n"
-        temp_endpoint += "    \"simulation_width\": " + params.simulation_width + ",\n"
-        temp_endpoint += "    \"simulation_depth\": " + params.simulation_depth + ",\n"
-        temp_endpoint += "    \"simulation_depth\": " + params.simulation_depth + ",\n"
+        temp_endpoint += "  \"num_particles\": " + str(params.num_particles) + ",\n"
+        temp_endpoint += "  \"num_active_workers\": " + str(params.num_active_workers) + ",\n"
+        temp_endpoint += "  \"simulation_height\": " + str(params.simulation_height) + ",\n"
+        temp_endpoint += "  \"simulation_width\": " + str(params.simulation_width) + ",\n"
+        temp_endpoint += "  \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
+        temp_endpoint += "  \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
         temp_endpoint += "]\n"
         temp_endpoint += "\"particles\":[\n"
-        for particle in particles:
-            temp_endpoint += "    " + json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=2)
+        for key, partition in params.partitions.items():
+            for particle in partition.particles:
+                temp_endpoint += "    " + json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=2)
         temp_endpoint += "\n]\n}"
         endpoint = temp_endpoint
 

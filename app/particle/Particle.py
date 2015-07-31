@@ -2,6 +2,8 @@
 
 import util
 import params
+import math
+import traceback
 
 class Particle:
     """Particle class for MD simulation."""
@@ -42,6 +44,7 @@ class Particle:
         collision_mass = 0
         collision_velocity = [0, 0, 0]            # The velocity of the entire system that's colliding
         for neighbor in self.neighbors:
+            util.debug(str(neighbor))
             collision_mass += neighbor.mass
             for i in range(3):
                 collision_velocity[i] += neighbor.velocity[i]
