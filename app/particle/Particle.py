@@ -1,9 +1,20 @@
 #!/usr/bin/python
+"""
+Author: Nicholas Fong
+        Lawrence Berkeley National Laboratory
+        National Energy Research Scientific Computing Center
+
+Acknowledgment:
+        This work was supported by the Director, Office of Science,
+        Division of Mathematical, Information, and Computational
+        Sciences of the U.S. Department of Energy under contract
+        DE-AC02-05CH11231, using resources of the National Energy Research
+        Scientific Computing Center.
+"""
 
 import util
 import params
 import math
-import traceback
 
 class Particle:
     """Particle class for MD simulation."""
@@ -20,6 +31,7 @@ class Particle:
         self.mass = mass
         self.radius = radius
         self.neighbors = None
+        util.debug("I am a particle at " + str(self.position) + " and I am owned by " + str(self.thread_num))
 
     def euclidean_distance_to(self, particle):
         x = abs(self.position[0] - particle.position[0])
@@ -43,8 +55,8 @@ class Particle:
     def update_velocity(self):
         collision_mass = 0
         collision_velocity = [0, 0, 0]            # The velocity of the entire system that's colliding
-        for neighbor in self.neighbors:
-            util.debug(str(neighbor))
+        for neighbor, distances in self.neighbors:
+#            util.debug(str(neighbor))
             collision_mass += neighbor.mass
             for i in range(3):
                 collision_velocity[i] += neighbor.velocity[i]
@@ -57,9 +69,11 @@ class Particle:
 
     def update_position(self, time):
         delta = [component*time for component in self.velocity]
+#        util.debug(str(delta))
         self.position[0] += delta[0]
         self.position[1] += delta[1]
         self.position[2] += delta[2]
+        util.debug(str(self.position))
 
         if any(d > self.radius for d in delta):
             util.debug("A particle is moving a distance of more than self.radius")

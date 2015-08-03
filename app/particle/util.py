@@ -1,5 +1,16 @@
 #!/usr/bin/python
-"""Utility functions"""
+"""Utility functions
+Author: Nicholas Fong
+        Lawrence Berkeley National Laboratory
+        National Energy Research Scientific Computing Center
+
+Acknowledgment:
+        This work was supported by the Director, Office of Science,
+        Division of Mathematical, Information, and Computational
+        Sciences of the U.S. Department of Energy under contract
+        DE-AC02-05CH11231, using resources of the National Energy Research
+        Scientific Computing Center.
+"""
 import params
 import math
 import traceback
@@ -46,5 +57,8 @@ def validate_particle_set(*args):
                         type(obj) + " instead of a Particle")
 
 def determine_particle_thread_num(x_position):
-    return math.ceil((x_position/params.simulation_width)*params.num_active_workers)
+    result = math.ceil((x_position/params.simulation_width)*params.num_active_workers)
+    if result == 0:
+        debug("Got that the thread num should be 0 given: x_position " + str(x_position) + " simulation_width of " + str(params.simulation_width) + " and with " + str(params.num_active_workers) + " active workers")
+    return result
 

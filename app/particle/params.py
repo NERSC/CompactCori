@@ -1,5 +1,16 @@
 #!/usr/bin/python
-"""Global parameters"""
+"""Global Parameters
+Author: Nicholas Fong
+        Lawrence Berkeley National Laboratory
+        National Energy Research Scientific Computing Center
+
+Acknowledgment:
+        This work was supported by the Director, Office of Science,
+        Division of Mathematical, Information, and Computational
+        Sciences of the U.S. Department of Energy under contract
+        DE-AC02-05CH11231, using resources of the National Energy Research
+        Scientific Computing Center.
+"""
 
 num_particles = None
 simulation_height = None

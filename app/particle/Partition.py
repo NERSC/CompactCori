@@ -1,4 +1,16 @@
 #!/usr/bin/python
+"""
+Author: Nicholas Fong
+        Lawrence Berkeley National Laboratory
+        National Energy Research Scientific Computing Center
+
+Acknowledgment:
+        This work was supported by the Director, Office of Science,
+        Division of Mathematical, Information, and Computational
+        Sciences of the U.S. Department of Energy under contract
+        DE-AC02-05CH11231, using resources of the National Energy Research
+        Scientific Computing Center.
+"""
 
 import util
 import params
@@ -135,7 +147,7 @@ class Partition:
         right, left = set(), set()
         for particle in self.particles:
             if particle.thread_num != params.rank:
-                debug("Rank is " + str(params.rank) + "but particle has thread number " + str(particle.thread_num))
+                util.debug("Rank is " + str(params.rank) + "but particle has thread number " + str(particle.thread_num))
             location = self.particle_is_not_in_range(particle)
             if location is -1:
                 left.add(particle)
@@ -163,10 +175,15 @@ class Partition:
 
     def update_master(self):
         """Update the master node with new particles"""
-        params.comm.send(self.particles, tag = 00)
+        if len(self.particles) is not 0:
+            util.debug("Rank " + str(params.rank) + " is sending back " + str(len(self.particles)) + " particles")
+        params.comm.send(self.particles, tag = 0)
 
     def receive_new_particles(self):
         """Receive new particle set after changing the number of threads"""
         new_particles = params.comm.recv(source = 1, tag = 11)
         self.set_particles(new_particles)
         self.update_end_x()
+
+    def __repr__(self):
+        return str(len(self.particles))
