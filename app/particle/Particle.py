@@ -18,6 +18,7 @@ import math
 
 class Particle:
     """Particle class for MD simulation."""
+
     def __init__(self, particle_id, thread_num, position, velocity, mass,
             radius):
         # TODO: Add validation of list length
@@ -32,6 +33,12 @@ class Particle:
         self.radius = radius
         self.neighbors = None
         util.debug("I am a particle at " + str(self.position) + " and I am owned by " + str(self.thread_num))
+
+    def __repr__(self):
+        return str(self.particle_id)
+
+    def __str__(self):
+        return str(self.particle_id)
 
     def euclidean_distance_to(self, particle):
         x = abs(self.position[0] - particle.position[0])
@@ -66,6 +73,7 @@ class Particle:
         for i in range(3):
             self.velocity[i] = (mass_difference/mass_sum) * self.velocity[i] +\
                     ((2*collision_mass)/mass_sum)*collision_velocity[i]
+#            self.velocity[i] = round(self.velocity[i], 4)
 
     def update_position(self, time):
         delta = [component*time for component in self.velocity]
@@ -73,7 +81,6 @@ class Particle:
         self.position[0] += delta[0]
         self.position[1] += delta[1]
         self.position[2] += delta[2]
-        util.debug(str(self.position))
 
         if any(d > self.radius for d in delta):
             util.debug("A particle is moving a distance of more than self.radius")
@@ -81,7 +88,11 @@ class Particle:
         # Bounce particles off edge of simulation
         simulation = [params.simulation_width, params.simulation_height, params.simulation_depth]
         for i in range(3):
-            while self.position[i] < i or self.position[i] > simulation[i]:
+            while self.position[i] < 0 or self.position[i] > simulation[i]:
+                util.debug("I am out of bounds: " + str(self.position))
                 self.velocity[i] *= -1
                 self.position[i] = self.position[i]*-1 if self.position[i] < 0\
                     else 2*simulation[i] - self.position[i]
+                util.debug("I am no longer out of bounds: " + str(self.position))
+#            self.position[i] = round(self.position[i], 4)
+#        util.debug("Particle " + str(self.particle_id) + " with mass " + str(self.mass) + " is at " + str(self.position))
