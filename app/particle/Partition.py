@@ -105,67 +105,54 @@ class Partition:
 
     def next_partition_is_active(self):
         return self.thread_num + 1 <= params.num_active_workers
+
+    def neighboring_sendrecv(self, sendobj, source_destination, tag):
+        neighbor_particles = params.comm.sendrecv(sendobj = sendobj,
+                dest = source_destination, sendtag = tag,
+                source = source_destination, recvtag = tag)
+#        util.debug("Updating by adding " + str(neighbor_particles))
+        self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
+
     def send_and_receive_neighboring_particles(self):
         """Send particles that may interact with another partitions particles,
         and receive other partitions' particles that may interact with this
         partition's particles
         """
-#        util.info("Rank " + str(params.rank) + " is starting")
-        sys.stdout.flush()
+        # TODO: DRY THIS OUT
         right, left = self.handoff_neighboring_particles()
 
         if params.rank == 1:
-            neighbor_particles = params.comm.sendrecv(sendobj = right, dest = self.thread_num + 1, sendtag = 1, source = self.thread_num + 1, recvtag = 1)
-            self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
+            self.neighboring_sendrecv(right, self.thread_num + 1, 1)
+#            neighbor_particles = params.comm.sendrecv(sendobj = right, dest = self.thread_num + 1, sendtag = 1, source = self.thread_num + 1, recvtag = 1)
+#            self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
 
         elif params.rank == params.num_active_workers and params.rank % 2 == 0:
-            neighbor_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 1, source = self.thread_num - 1, recvtag = 1)
-            self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
+            self.neighboring_sendrecv(left, self.thread_num - 1, 1)
+#            neighbor_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 1, source = self.thread_num - 1, recvtag = 1)
+#            self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
 
         elif params.rank == params.num_active_workers and params.rank % 2 == 1:
-            neighbor_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 2, source = self.thread_num - 1, recvtag = 2)
-            self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
+            self.neighboring_sendrecv(left, self.thread_num - 1, 2)
+#            neighbor_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 2, source = self.thread_num - 1, recvtag = 2)
+#            self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
 
         elif params.rank % 2 == 0:
-            neighbor_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 1, source = self.thread_num - 1, recvtag = 1)
-            self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
+            self.neighboring_sendrecv(left, self.thread_num - 1, 1)
+#            neighbor_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 1, source = self.thread_num - 1, recvtag = 1)
+#            self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
 
-            neighbor_particles = params.comm.sendrecv(sendobj = right, dest = self.thread_num + 1, sendtag = 2, source = self.thread_num + 1, recvtag = 2)
-            self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
+            self.neighboring_sendrecv(right, self.thread_num + 1, 2)
+#            neighbor_particles = params.comm.sendrecv(sendobj = right, dest = self.thread_num + 1, sendtag = 2, source = self.thread_num + 1, recvtag = 2)
+#            self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
 
         else:
-            neighbor_particles = params.comm.sendrecv(sendobj = right, dest = self.thread_num + 1, sendtag = 1, source = self.thread_num + 1, recvtag = 1)
-            self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
-        
-            neighbor_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 2, source = self.thread_num - 1, recvtag = 2)
-            self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
+            self.neighboring_sendrecv(right, self.thread_num + 1, 1)
+#            neighbor_particles = params.comm.sendrecv(sendobj = right, dest = self.thread_num + 1, sendtag = 1, source = self.thread_num + 1, recvtag = 1)
+#            self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
 
-        # Update neighbors with my particles
-#        if self.previous_partition_is_active():
-#            neighbor_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 1, source = params.mpi.ANY_SOURCE, recvtag = 1)
-#            self.neighbor_particles.union(neighbor_particles)
-#        else:
-#            left = set()
-#            neighbor_particles = params.comm.sendrecv(sendobj = left, dest = params.num_active_workers, sendtag = 1, source = params.mpi.ANY_SOURCE, recvtag = 1)
-#
-#        if self.next_partition_is_active():
-#            neighbor_particles = params.comm.sendrecv(sendobj = right, dest = self.thread_num + 1, sendtag = 1, source = params.mpi.ANY_SOURCE, recvtag = 1)
-#            self.neighbor_particles.union(neighbor_particles)
-#        else:
-#            right = set()
-#            neighbor_particles = params.comm.sendrecv(sendobj = right, dest = 1, sendtag = 1, source = params.mpi.ANY_SOURCE, recvtag = 1)
-#        util.info("Rank " + str(params.rank) + " is done")
-#
-#        # Receive particles from neighbors
-#        self.neighbor_particles = set()
-#        if self.previous_partition_is_active():
-#            neighbor_particles = params.comm.irecv(source = params.mpi.ANY_SOURCE, tag = 1)
-#            neighbor_particles = set()
-#            params.comm.irecv(recvobj = neighbor_particles, source = params.mpi.ANY_SOURCE, tag = 1)
-#            self.neighbor_particles.union(neighbor_particles)
-#        if self.next_partition_is_active():
-#            neighbor_particles = params.comm.irecv(source = params.mpi.ANY_SOURCE, tag = 1)
-#            self.neighbor_particles.union(particle for particle in neighbor_particles)
+            self.neighboring_sendrecv(left, self.thread_num - 1, 2)
+#            neighbor_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 2, source = self.thread_num - 1, recvtag = 2)
+#            self.neighbor_particles = self.neighbor_particles.union(neighbor_particles)
 
     def interact_particles(self):
         for particle in self.particles:
@@ -175,6 +162,21 @@ class Partition:
         for particle in self.particles:
             particle.update_position(params.dt)
 
+    def exchange_sendrecv(self, increment, sendobj, source_destination, tag):
+        self.remove_particles(sendobj)
+        if increment:
+            for particle in sendobj:
+                particle.thread_num += 1
+        else:
+            for particle in sendobj:
+                particle.thread_num -= 1
+        new_particles = params.comm.sendrecv(sendobj = sendobj,
+                dest = source_destination, sendtag = tag,
+                source = source_destination, recvtag = tag)
+        for particle in new_particles:
+            util.debug("Adding new particles " + str(particle))
+        self.add_particles(new_particles)
+
     def exchange_particles(self):
         """Send particles that should now belong to neighboring partitions to
         neighbors, and receive any particles that now belong to this partition
@@ -182,7 +184,6 @@ class Partition:
         The sending partition updates the Particle's internal thread number
         before sending the Particle to the other partition
         """
-#        util.info("Rank " + str(params.rank) + " is starting the second exchange")
         sys.stdout.flush()
         right, left = set(), set()
         for particle in self.particles:
@@ -194,93 +195,61 @@ class Partition:
             elif location is 1:
                 right.add(particle)
 
-
         # Send neighbors their new particles
+        # TODO: DRY THIS OUT
         if params.rank == 1:
-            self.remove_particles(right)
-            for particle in right:
-                particle.thread_num += 1
-            new_particles = params.comm.sendrecv(sendobj = right, dest = self.thread_num + 1, sendtag = 1, source = self.thread_num + 1, recvtag = 1)
-            self.add_particles(new_particles)
+            self.exchange_sendrecv(True, right, self.thread_num + 1, 1)
+#            self.remove_particles(right)
+#            for particle in right:
+#                particle.thread_num += 1
+#            new_particles = params.comm.sendrecv(sendobj = right, dest = self.thread_num + 1, sendtag = 1, source = self.thread_num + 1, recvtag = 1)
+#            self.add_particles(new_particles)
 
         elif params.rank == params.num_active_workers and params.rank % 2 == 0:
-            self.remove_particles(left)
-            for particle in left:
-                particle.thread_num -= 1
-            new_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 1, source = self.thread_num - 1, recvtag = 1)
-            self.add_particles(new_particles)
-
-        elif params.rank == params.num_active_workers and params.rank % 2 == 1:
-            self.remove_particles(left)
-            for particle in left:
-                particle.thread_num -= 1
-            new_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 2, source = self.thread_num - 1, recvtag = 2)
-            self.add_particles(new_particles)
-
-        elif params.rank % 2 == 0:
-            self.remove_particles(left)
-            for particle in left:
-                particle.thread_num -= 1
-            new_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 1, source = self.thread_num - 1, recvtag = 1)
-            self.add_particles(new_particles)
-
-            self.remove_particles(right)
-            for particle in right:
-                particle.thread_num += 1
-            new_particles = params.comm.sendrecv(sendobj = right, dest = self.thread_num + 1, sendtag = 2, source = self.thread_num + 1, recvtag = 2)
-            self.add_particles(new_particles)
-
-        else:
-            self.remove_particles(right)
-            for particle in right:
-                particle.thread_num += 1
-            new_particles = params.comm.sendrecv(sendobj = right, dest = self.thread_num + 1, sendtag = 1, source = self.thread_num + 1, recvtag = 1)
-            self.add_particles(new_particles)
- 
-            self.remove_particles(left)
-            for particle in left:
-                particle.thread_num -= 1
-            new_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 2, source = self.thread_num - 1, recvtag = 2)
-            self.add_particles(new_particles)
-
-#        if self.previous_partition_is_active():
+            self.exchange_sendrecv(False, left, self.thread_num - 1, 1)
 #            self.remove_particles(left)
 #            for particle in left:
 #                particle.thread_num -= 1
-#            new_particles = params.comm.sendrecv(sendobj = left, dest = params.rank - 1, sendtag = 10, source = params.mpi.ANY_SOURCE, recvtag = 10)
-#            if new_particles:
-#                self.add_particles(new_particles)
-#        else:
-#            left = set()
-#            new_particles = params.comm.sendrecv(sendobj = left, dest = 1, sendtag = 10, source = params.mpi.ANY_SOURCE, recvtag = 10)
-#        
-#        if self.next_partition_is_active():
-#            self.remove_particles(right)
-#            for particle in right:
-#                particle.thread_num += 1
-#            new_particles = params.comm.sendrecv(sendobj = right, dest = params.rank + 1, sendtag = 10, source = params.mpi.ANY_SOURCE, recvtag = 10)
-#            if new_particles:
-#                self.add_particles(new_particles)
-#        else:
-#            right = set()
-#            new_particles = params.comm.sendrecv(sendobj = right, dest = params.num_active_workers, sendtag = 10, source = params.mpi.ANY_SOURCE, recvtag = 10)
-#        util.info("Rank " + str(params.rank) + " is done with the second exchange")
+#            new_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 1, source = self.thread_num - 1, recvtag = 1)
+#            self.add_particles(new_particles)
 
-#        if self.next_partition_is_active():
+        elif params.rank == params.num_active_workers and params.rank % 2 == 1:
+            self.exchange_sendrecv(False, left, self.thread_num - 1, 2)
+#            self.remove_particles(left)
+#            for particle in left:
+#                particle.thread_num -= 1
+#            new_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 2, source = self.thread_num - 1, recvtag = 2)
+#            self.add_particles(new_particles)
+
+        elif params.rank % 2 == 0:
+            self.exchange_sendrecv(False, left, self.thread_num - 1, 1)
+#            self.remove_particles(left)
+#            for particle in left:
+#                particle.thread_num -= 1
+#            new_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 1, source = self.thread_num - 1, recvtag = 1)
+#            self.add_particles(new_particles)
+
+            self.exchange_sendrecv(True, right, self.thread_num + 1, 2)
 #            self.remove_particles(right)
 #            for particle in right:
 #                particle.thread_num += 1
-#            params.comm.isend(right, dest = params.rank + 1, tag = 10)
-#
-#        # Receive particles from neighbors
-#        if self.previous_partition_is_active():
-#            new_particles = params.comm.irecv(source = params.mpi.ANY_SOURCE, tag = 10)
-#            if new_particles:
-#                self.add_particles(new_particles)
-#        if self.next_partition_is_active():
-#            new_particles = params.comm.irecv(source = params.mpi.ANY_SOURCE, tag = 10)
-#            if new_particles:
-#                self.add_particles(new_particles)
+#            new_particles = params.comm.sendrecv(sendobj = right, dest = self.thread_num + 1, sendtag = 2, source = self.thread_num + 1, recvtag = 2)
+#            self.add_particles(new_particles)
+
+        else:
+            self.exchange_sendrecv(True, right, self.thread_num + 1, 1)
+#            self.remove_particles(right)
+#            for particle in right:
+#                particle.thread_num += 1
+#            new_particles = params.comm.sendrecv(sendobj = right, dest = self.thread_num + 1, sendtag = 1, source = self.thread_num + 1, recvtag = 1)
+#            self.add_particles(new_particles)
+
+            self.exchange_sendrecv(False, left, self.thread_num - 1, 2)
+#            self.remove_particles(left)
+#            for particle in left:
+#                particle.thread_num -= 1
+#            new_particles = params.comm.sendrecv(sendobj = left, dest = self.thread_num - 1, sendtag = 2, source = self.thread_num - 1, recvtag = 2)
+#            self.add_particles(new_particles)
 
     def update_master(self):
         """Update the master node with new particles"""

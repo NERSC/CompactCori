@@ -79,10 +79,7 @@ if params.rank is 0:
 
     # Create Particles for Partitions
     for i in range(params.num_particles):
-#    for i in range(1,3):
         radius = random.randint(1, params.max_radius)
-#        position = [200*i, 10, 10]
-#        velocity = [-1*(i - 1.5)*30000, 0, 0]
         position = [random.randint(radius, params.simulation_width - 1),
                     random.randint(radius, params.simulation_height - 1),
                     random.randint(radius, params.simulation_depth - 1)]
@@ -104,26 +101,16 @@ def update_params():
 def timestep():
     """Only do something as a slave if an active worker"""
     if params.rank is 0:
-#        util.debug("Starting to listen...")
         for i in range(1, params.num_active_workers+1):
             new_particles = params.comm.recv(source = mpi.ANY_SOURCE, status = params.mpi_status, tag = 0)
             params.partitions[params.mpi_status.Get_source()].particles = new_particles
-#            util.debug("Received particles from " + str(params.mpi_status.Get_source()))
         util.debug(str(params.partitions))
     elif params.rank <= params.num_active_workers:
         partition = params.partitions[params.rank]
-#        util.info("Sending/receiving neighbors")
         partition.send_and_receive_neighboring_particles()
-#        util.info("Interacting")
         partition.interact_particles()
-#        util.info("Exchanging")
         partition.exchange_particles()
-#        util.info(str(partition.thread_num) + " updating master")
         partition.update_master()
-#        util.info(str(partition.thread_num) + " done updating master")
-#    params.comm.barrier()
-#    util.debug("Rank " + str(params.rank) + " is beyond barrier")
-#    params.comm.barrier()
 
 def change_num_active_workers(new_num_active_workers):
     if params.rank is 0:
@@ -206,7 +193,6 @@ def main():
         if params.rank is 0:
             # Use a copy of endpoint to prevent queries to endpoint from
             # receiving an in-progress timestep
-#            util.debug("Starting endpoint")
             temp_endpoint = "{\n"
             param_endpoint = "  \"params\": [\n"
             param_endpoint += "    \"num_particles\": " + str(params.num_particles) + ",\n"
@@ -218,18 +204,10 @@ def main():
             param_endpoint += "  ]\n"
 
             particles_endpoint = "  \"particles\": [\n"
-#            util.debug("Starting for")
             for key, partition in params.partitions.items():
-#                util.debug("Running nested for")
                 for particle in partition.particles:
-#                    util.info("Dumpin a " + str(type(particle)))
-#                    util.debug("Current lenght of endpoint is " + str(len(particles_endpoint)))
-#                    util.debug("Position: " + str(particle.position) + " Velocity: " + str(particle.velocity))
                     particle.neighbors = ""
                     particles_endpoint += json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=4) + ",\n"
-#                    particles_endpoint += json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=4) + ",\n"
-#                    util.info("done")
-#            util.debug("Exiting for")
 
             particles_endpoint = particles_endpoint[:-2] # trim extra comma
 
@@ -241,7 +219,6 @@ def main():
             endpoint = "{\n" + param_endpoint + "  " + "\"particles\": [\n" + particles_endpoint + "  \n]\n}"
 #            util.debug("Finished endpoint... looping")
 #        time.sleep(params.dt)
-#        time.sleep(0.00001)
 
 if __name__ == "__main__":
     main()

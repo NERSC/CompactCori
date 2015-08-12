@@ -63,7 +63,6 @@ class Particle:
         collision_mass = 0
         collision_velocity = [0, 0, 0]            # The velocity of the entire system that's colliding
         for neighbor, distances in self.neighbors:
-#            util.debug(str(neighbor))
             collision_mass += neighbor.mass
             for i in range(3):
                 collision_velocity[i] += neighbor.velocity[i]
@@ -73,11 +72,10 @@ class Particle:
         for i in range(3):
             self.velocity[i] = (mass_difference/mass_sum) * self.velocity[i] +\
                     ((2*collision_mass)/mass_sum)*collision_velocity[i]
-#            self.velocity[i] = round(self.velocity[i], 4)
 
     def update_position(self, time):
         delta = [component*time for component in self.velocity]
-#        util.debug(str(delta))
+#        util.info("Delta is " + str(delta))
         self.position[0] += delta[0]
         self.position[1] += delta[1]
         self.position[2] += delta[2]
@@ -89,10 +87,9 @@ class Particle:
         simulation = [params.simulation_width, params.simulation_height, params.simulation_depth]
         for i in range(3):
             while self.position[i] < 0 or self.position[i] > simulation[i]:
-                util.debug("I am out of bounds: " + str(self.position))
+#                util.debug("I am out of bounds: " + str(self.position))
                 self.velocity[i] *= -1
                 self.position[i] = self.position[i]*-1 if self.position[i] < 0\
                     else 2*simulation[i] - self.position[i]
-                util.debug("I am no longer out of bounds: " + str(self.position))
-#            self.position[i] = round(self.position[i], 4)
-#        util.debug("Particle " + str(self.particle_id) + " with mass " + str(self.mass) + " is at " + str(self.position))
+#            util.debug("I am no longer out of bounds: " + str(self.position))
+#        util.info("Particle " + str(self.particle_id) + " with mass " + str(self.mass) + " is at " + str(self.position))
