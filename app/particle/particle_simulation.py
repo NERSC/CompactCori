@@ -92,14 +92,12 @@ if params.rank is 0:
         params.partitions[thread_num].add_particle(new_particle)
 
 def update_params():
-    params.num_active_workers = params.comm.bcast(params.num_active_workers)
+    params.new_num_active_workers = params.comm.bcast(params.new_num_active_workers)
 
 # Broadcast setup information
 params.partitions = params.comm.bcast(params.partitions)
 params.num_active_workers = params.comm.bcast(params.num_active_workers)
-params.new_num_active_workers = params.comm.bcast(params.num_active_workers)
 update_params()
-
 
 # One timestep
 def timestep():
@@ -116,23 +114,23 @@ def timestep():
         partition.exchange_particles()
         partition.update_master()
 
-def change_num_active_workers(new_num_active_workers):
+def change_num_active_workers():
     if params.rank is 0:
-        if new_num_active_workers < 1 or new_num_active_workers > params.num_threads - 1:
-            util.debug("Invalid number of active workers requested: " + new_num_active_workers)
+        if params.new_num_active_workers < 1 or params.new_num_active_workers > params.num_threads - 1:
+            util.debug("Invalid number of active workers requested: " + params.new_num_active_workers)
 
         new_distribution = {}
-        for i in range(1, new_num_active_workers + 1):
+        for i in range(1, params.new_num_active_workers + 1):
             new_distribution[i] = set()
 
-        for partition_id, partition in params.partitions:
+        for partition_id, partition in params.partitions.items():
             for particle in partition.particles:
-                new_thread = util.determine_particle_thread_num(particle.position[0], new_num_active_workers)
+                new_thread = util.determine_particle_thread_num(particle.position[0], params.new_num_active_workers)
                 particle.thread_num = new_thread
                 new_distribution[new_thread].add(particle)
 
-        for i in range(1, new_num_active_workers + 1):
-            params.comm.isend(new_distribution[i], dest = i, tag = 11)
+        for i in range(1, params.new_num_active_workers + 1):
+            params.comm.send(new_distribution[i], dest = i, tag = 11)
     else:
         params.partitions[params.rank].receive_new_particles()
 
@@ -143,7 +141,7 @@ class Server(BaseHTTPRequestHandler):
         global endpoint
         parsed_path = urlparse(self.path)
         if "/api/v1/get_particles" in parsed_path:
-            message = endpoint #"\r\n".join(endpoint)
+            message = endpoint
             self.send_response(200)
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
@@ -188,9 +186,9 @@ def main():
             start = time.time()
 
         timestep()
-        update_params() #TODO IS THERE A BUG HERE
+        update_params()
         if params.new_num_active_workers is not params.num_active_workers:
-            change_num_active_workers(params.new_num_active_workers)
+            change_num_active_workers()
 
         # Timing
         if (iterations % samples == 0) and params.rank == 0:

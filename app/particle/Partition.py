@@ -40,10 +40,12 @@ class Partition:
         params.num_active_workers += 1
         params.new_num_active_workers += 1
 
-    def update_end_x(self):
+    def update_start_end(self):
         """This method is used to pick volume that does not evenly divide into
         the number of active workers when the number of workers changes
         """
+        self.delta_x = params.simulation_width//(params.num_active_workers - 1)
+        self.start_x = self.delta_x*(self.thread_num-1)
         self.end_x = params.simulation_width if self.thread_num is params.num_active_workers else self.start_x + self.delta_x
 
     def add_particles(self, particle_set):
@@ -206,7 +208,8 @@ class Partition:
         """Receive new particle set after changing the number of threads"""
         new_particles = params.comm.recv(source = 1, tag = 11)
         self.set_particles(new_particles)
-        self.update_end_x()
+        self.update_start_x()
+        self.update_start_end()
 
     def __repr__(self):
         return str(len(self.particles))

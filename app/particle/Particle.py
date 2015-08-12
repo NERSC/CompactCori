@@ -21,7 +21,6 @@ class Particle:
 
     def __init__(self, particle_id, thread_num, position, velocity, mass,
             radius):
-        # TODO: Add validation of list length
         util.validate_list(position, velocity)
         util.validate_int(particle_id, thread_num, mass, radius)
 
