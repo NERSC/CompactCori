@@ -143,6 +143,7 @@ class Server(BaseHTTPRequestHandler):
         if "/api/v1/get_particles" in parsed_path:
             message = endpoint
             self.send_response(200)
+            # TODO: Security?
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(message.encode("utf-8"))
@@ -154,6 +155,10 @@ class Server(BaseHTTPRequestHandler):
         global endpoint
         parsed_path = urlparse(self.path)
         if "/api/v1/post_parameters" in parsed_path:
+            self.send_response(200)
+            # TODO: Security?
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
             length = int(self.headers["Content-Length"])
             post_data = self.rfile.read(length).decode("utf-8")
             # Parse data from POST
@@ -199,7 +204,7 @@ def main():
             # Use a copy of endpoint to prevent queries to endpoint from
             # receiving an in-progress timestep
             temp_endpoint =   "{\n"
-            param_endpoint =  "    \"params\": [\n"
+            param_endpoint =  "    \"params\": {\n"
             param_endpoint += "        \"num_particles\": " + str(params.num_particles) + ",\n"
             param_endpoint += "        \"num_active_workers\": " + str(params.num_active_workers) + ",\n"
             param_endpoint += "        \"simulation_height\": " + str(params.simulation_height) + ",\n"
@@ -207,7 +212,7 @@ def main():
             param_endpoint += "        \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
             param_endpoint += "        \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
             param_endpoint += "        \"timsteps_per_second\": " + str(params.timesteps_per_second) + "\n"
-            param_endpoint += "    ]\n"
+            param_endpoint += "    }\n"
 
             particles_endpoint = "    \"particles\": [\n"
             for key, partition in params.partitions.items():
