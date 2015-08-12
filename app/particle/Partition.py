@@ -196,7 +196,6 @@ class Partition:
                 right.add(particle)
 
         # Send neighbors their new particles
-        # TODO: DRY THIS OUT
         if params.rank == 1:
             self.exchange_sendrecv(True, right, self.thread_num + 1, 1)
 #            self.remove_particles(right)

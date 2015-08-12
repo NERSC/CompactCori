@@ -48,12 +48,6 @@ class Particle:
         json += "        },\n"
         return json
 
-    def __repr__(self):
-        return str(self.particle_id)
-
-    def __str__(self):
-        return str(self.particle_id)
-
     def euclidean_distance_to(self, particle):
         x = abs(self.position[0] - particle.position[0])
         y = abs(self.position[1] - particle.position[1])

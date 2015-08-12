@@ -61,15 +61,16 @@ parser.add_argument("-d", "--dt", type=float,
         help = "time constant")
 args = parser.parse_args()
 
-params.num_particles = args.numparticles if args.numparticles else 10
+params.num_particles = args.numparticles if args.numparticles else 100
 params.simulation_height = args.height if args.height else 1000
 params.simulation_width = args.width if args.width else 1000
 params.simulation_depth = args.depth if args.depth else 1000
 params.dt = args.dt if args.dt else 0.0005
 params.num_active_workers = 0
 params.new_num_active_workers = 0
-params.max_radius = min(params.simulation_width, params.simulation_height, params.simulation_depth)//32
 params.partitions = {}
+params.max_radius = min(params.simulation_width, params.simulation_height, params.simulation_depth)//32
+params.timesteps_per_second = 0
 
 if params.rank is 0:
     # Create partitions 1 through params.num_threads - 1
@@ -89,12 +90,16 @@ if params.rank is 0:
         thread_num = util.determine_particle_thread_num(position[0])
         new_particle = Particle(i, thread_num, position, velocity, mass, radius)
         params.partitions[thread_num].add_particle(new_particle)
-params.partitions = params.comm.bcast(params.partitions)
-params.num_active_workers = params.comm.bcast(params.num_active_workers)
-params.new_num_active_workers = params.comm.bcast(params.new_num_active_workers)
 
 def update_params():
     params.num_active_workers = params.comm.bcast(params.num_active_workers)
+
+# Broadcast setup information
+params.partitions = params.comm.bcast(params.partitions)
+params.num_active_workers = params.comm.bcast(params.num_active_workers)
+params.new_num_active_workers = params.comm.bcast(params.num_active_workers)
+update_params()
+
 
 # One timestep
 def timestep():
@@ -166,59 +171,55 @@ def main():
     global endpoint
     if params.rank is 0:
         from http.server import HTTPServer
-
         port_number = 8080
         server = HTTPServer(("127.0.0.1", port_number), Server)
         util.info("Starting server on port " +  str(port_number) + ", ^c to exit")
         threading.Thread(target=server.serve_forever).start()
 
-    count = 0
+    iterations = 0
 #    while True:
     for i in range(100):
-        count += 1
-        if (count % 100 == 1) and params.rank == 0:
+
+        # Timing
+        samples = 100
+        iterations += 1
+
+        if (iterations % samples == 1) and params.rank == 0:
             start = time.time()
+
         timestep()
-        update_params()
+        update_params() #TODO IS THERE A BUG HERE
         if params.new_num_active_workers is not params.num_active_workers:
             change_num_active_workers(params.new_num_active_workers)
 
-        if (count % 100 == 0) and params.rank == 0:
-            end = time.time()
-            difference = end - start
-
-            util.info("Steps per second:" + str(100/difference))
+        # Timing
+        if (iterations % samples == 0) and params.rank == 0:
+            params.timesteps_per_second = samples/(time.time() - start)
+            util.info("Average steps per second: " + str(params.timesteps_per_second))
 
         if params.rank is 0:
             # Use a copy of endpoint to prevent queries to endpoint from
             # receiving an in-progress timestep
             temp_endpoint =   "{\n"
             param_endpoint =  "    \"params\": [\n"
-            param_endpoint += "      \"num_particles\": " + str(params.num_particles) + ",\n"
-            param_endpoint += "      \"num_active_workers\": " + str(params.num_active_workers) + ",\n"
-            param_endpoint += "      \"simulation_height\": " + str(params.simulation_height) + ",\n"
-            param_endpoint += "      \"simulation_width\": " + str(params.simulation_width) + ",\n"
-            param_endpoint += "      \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
-            param_endpoint += "      \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
+            param_endpoint += "        \"num_particles\": " + str(params.num_particles) + ",\n"
+            param_endpoint += "        \"num_active_workers\": " + str(params.num_active_workers) + ",\n"
+            param_endpoint += "        \"simulation_height\": " + str(params.simulation_height) + ",\n"
+            param_endpoint += "        \"simulation_width\": " + str(params.simulation_width) + ",\n"
+            param_endpoint += "        \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
+            param_endpoint += "        \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
+            param_endpoint += "        \"timsteps_per_second\": " + str(params.timesteps_per_second) + "\n"
             param_endpoint += "    ]\n"
 
             particles_endpoint = "    \"particles\": [\n"
             for key, partition in params.partitions.items():
                 for particle in partition.particles:
-                    util.info("Entering jsonify")
-                    particle.neighbors = ""
+#                    particle.neighbors = ""
                     particles_endpoint += particle.jsonify()#json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=4) + ",\n"
 
             particles_endpoint = particles_endpoint[:-2] # trim extra comma
 
-            # Add spacing
-#            particles_endpoint = string.split(particles_endpoint, '\n')
-#            particles_endpoint = map(lambda a, ns=numSpaces: indentLine(a, ns), s)
-#            particles_endpoint = string.join(s, '\n')
-
             endpoint = "{\n" + param_endpoint + particles_endpoint + "\n    ]\n}\n"
-#            util.debug("Finished endpoint... looping")
-#        time.sleep(params.dt)
 
 if __name__ == "__main__":
     main()

@@ -1,30 +1,55 @@
+# curl 127.0.0.1:8080/api/v1/get_particles 
 {
-"params":[
-    "num_particles" 1000,
-    "num_active_workers": 15,
-    "simulation_height": 1000,
-    "simulation_width": 1000,
-    "simulation_depth": 1000,
-]
-"particles":[
-    {
-        "particle_id": 5,
-        "thread_num": 3,
-        "position": [13.1249,53.289,530.235],
-        "velocity":[1.35,4.234,935.90],
-        "mass":13,
-        "radius":78,
-        "neighbors":[]
-    },
-    {
-        "particle_id": 58,
-        "thread_num": 8,
-        "position": [56,48.563,985],
-        "velocity":[-1.1034,9.45,0.1],
-        "mass":15,
-        "radius":6,
-        "neighbors":[]
-    }
-]
+    "params": [
+        "num_particles": 5,
+        "num_active_workers": 4,
+        "simulation_height": 1000,
+        "simulation_width": 1000,
+        "simulation_depth": 1000,
+        "simulation_depth": 1000,
+        "timsteps_per_second": 482.8153670120799
+    ]
+    "particles": [
+        {
+            "particle_id": 0,
+            "thread_num": 1,
+            "position": [28.100000000000122, 72.19999999999953, 157.49999999999955],
+            "velocity": [2.0, 4.0, 10.0],
+            "mass": 3,
+            "radius": 23
+        },
+        {
+            "particle_id": 2,
+            "thread_num": 2,
+            "position": [286.0, 945.0499999999988, 952.1499999999965],
+            "velocity": [0.0, 1.0, 3.0],
+            "mass": 3,
+            "radius": 9
+        },
+        {
+            "particle_id": 3,
+            "thread_num": 2,
+            "position": [281.0, 760.0, 264.09999999999764],
+            "velocity": [0.0, 0.0, 2.0],
+            "mass": 3,
+            "radius": 7
+        },
+        {
+            "particle_id": 4,
+            "thread_num": 2,
+            "position": [275.15000000000214, 841.0999999999976, 876.0999999999976],
+            "velocity": [3.0, 2.0, 2.0],
+            "mass": 3,
+            "radius": 6
+        },
+        {
+            "particle_id": 1,
+            "thread_num": 4,
+            "position": [828.2500000000055, 430.49999999999955, 44.39999999999978],
+            "velocity": [5.0, 10.0, 8.0],
+            "mass": 3,
+            "radius": 22
+        }
+    ]
 }
 
