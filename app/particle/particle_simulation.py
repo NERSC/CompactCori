@@ -1,6 +1,5 @@
 #!/usr/bin/python
-"""A parallelized MD simulation in Python written for version 1 of the Compact Cori
-project at NERSC.
+"""A parallelized MD simulation in Python written for version 1 of the Compact Cori project at NERSC.
 
 Only the master node has an accurate params file.  Slaves know the number of
 active workers, but other parameters are not guaranteed to be accurate.
@@ -193,21 +192,22 @@ def main():
         if params.rank is 0:
             # Use a copy of endpoint to prevent queries to endpoint from
             # receiving an in-progress timestep
-            temp_endpoint = "{\n"
-            param_endpoint = "  \"params\": [\n"
-            param_endpoint += "    \"num_particles\": " + str(params.num_particles) + ",\n"
-            param_endpoint += "    \"num_active_workers\": " + str(params.num_active_workers) + ",\n"
-            param_endpoint += "    \"simulation_height\": " + str(params.simulation_height) + ",\n"
-            param_endpoint += "    \"simulation_width\": " + str(params.simulation_width) + ",\n"
-            param_endpoint += "    \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
-            param_endpoint += "    \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
-            param_endpoint += "  ]\n"
+            temp_endpoint =   "{\n"
+            param_endpoint =  "    \"params\": [\n"
+            param_endpoint += "      \"num_particles\": " + str(params.num_particles) + ",\n"
+            param_endpoint += "      \"num_active_workers\": " + str(params.num_active_workers) + ",\n"
+            param_endpoint += "      \"simulation_height\": " + str(params.simulation_height) + ",\n"
+            param_endpoint += "      \"simulation_width\": " + str(params.simulation_width) + ",\n"
+            param_endpoint += "      \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
+            param_endpoint += "      \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
+            param_endpoint += "    ]\n"
 
-            particles_endpoint = "  \"particles\": [\n"
+            particles_endpoint = "    \"particles\": [\n"
             for key, partition in params.partitions.items():
                 for particle in partition.particles:
+                    util.info("Entering jsonify")
                     particle.neighbors = ""
-                    particles_endpoint += json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=4) + ",\n"
+                    particles_endpoint += particle.jsonify()#json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=4) + ",\n"
 
             particles_endpoint = particles_endpoint[:-2] # trim extra comma
 
@@ -216,7 +216,7 @@ def main():
 #            particles_endpoint = map(lambda a, ns=numSpaces: indentLine(a, ns), s)
 #            particles_endpoint = string.join(s, '\n')
 
-            endpoint = "{\n" + param_endpoint + "  " + "\"particles\": [\n" + particles_endpoint + "  \n]\n}"
+            endpoint = "{\n" + param_endpoint + particles_endpoint + "\n    ]\n}\n"
 #            util.debug("Finished endpoint... looping")
 #        time.sleep(params.dt)
 

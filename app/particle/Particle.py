@@ -34,6 +34,20 @@ class Particle:
         self.neighbors = None
         util.debug("I am a particle at " + str(self.position) + " and I am owned by " + str(self.thread_num))
 
+    def jsonify(self):
+        """Hacky conversion to JSON to avoid infinite loop with jsonify and
+        nested neighbors
+        """
+        json =  "        {\n"
+        json += "            \"particle_id\": " + str(self.particle_id) + ",\n"
+        json += "            \"thread_num\": " + str(self.thread_num) + ",\n"
+        json += "            \"position\": " + str(self.position) + ",\n"
+        json += "            \"velocity\": " + str(self.velocity) + ",\n"
+        json += "            \"mass\": " + str(self.mass) + ",\n"
+        json += "            \"radius\": " + str(self.radius) + "\n"
+        json += "        },\n"
+        return json
+
     def __repr__(self):
         return str(self.particle_id)
 
@@ -87,7 +101,7 @@ class Particle:
         simulation = [params.simulation_width, params.simulation_height, params.simulation_depth]
         for i in range(3):
             while self.position[i] < 0 or self.position[i] > simulation[i]:
-#                util.debug("I am out of bounds: " + str(self.position))
+                util.debug("I am out of bounds: " + str(self.position) + " and I am going this fast:" + str(self.velocity))
                 self.velocity[i] *= -1
                 self.position[i] = self.position[i]*-1 if self.position[i] < 0\
                     else 2*simulation[i] - self.position[i]
