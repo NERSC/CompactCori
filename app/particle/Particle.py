@@ -33,10 +33,19 @@ class Particle:
         self.neighbors = None
         util.debug("I am a particle at " + str(self.position) + " and I am owned by " + str(self.thread_num))
 
-    def jsonify(self):
+    def jsonify(self, indent = 4):
         """Hacky conversion to JSON to avoid infinite loop with jsonify and
         nested neighbors
         """
+#       TODO: Debug this to DRY out this method
+#        particle_dict = self.__dict__
+#        util.info("Dict looks like: " + str(particle_dict))
+#        del particle_dict['neighbors']
+#        util.info("Now it looks like: " + str(particle_dict))
+#        json = json.dumps(particle_dict, default=lambda obj: obj.__dict__, sort_keys = True, indent=4)
+#        util.info("And now it looks like: " + str(particle_dict))
+#        json = "\n".join((" " * indent) + i for i in json.splitlines())
+
         json =  "        {\n"
         json += "            \"particle_id\": " + str(self.particle_id) + ",\n"
         json += "            \"thread_num\": " + str(self.thread_num) + ",\n"
@@ -48,6 +57,7 @@ class Particle:
         return json
 
     def euclidean_distance_to(self, particle):
+        """Return the 3D euclidean distance between this Particle and another"""
         x = abs(self.position[0] - particle.position[0])
         y = abs(self.position[1] - particle.position[1])
         z = abs(self.position[2] - particle.position[2])
@@ -55,6 +65,9 @@ class Particle:
         return (center_to_center - self.radius - particle.radius, (x, y, z))
 
     def populate_neighbors(self, particles):
+        """Populate the list of neighbors with particles that are colliding this
+        particle
+        """
         self.neighbors = []
         for particle in particles:
             euclidean_distance, distances = self.euclidean_distance_to(particle)
@@ -63,10 +76,8 @@ class Particle:
         if len(self.neighbors) > 1:
             util.debug("There are multiple collisions happening at once")
 
-    def get_momentum(self):
-        return tuple([velocity * self.mass for velocity in self.velocity])
-
     def update_velocity(self):
+        """Update the velocity of this particle assuming an elastic collision"""
         collision_mass = 0
         collision_velocity = [0, 0, 0]            # The velocity of the entire system that's colliding
         for neighbor, distances in self.neighbors:
@@ -81,6 +92,9 @@ class Particle:
                     ((2*collision_mass)/mass_sum)*collision_velocity[i]
 
     def update_position(self, time):
+        """Update the position of this Particle based on the velocity of the
+        Particle
+        """
         delta = [component*time for component in self.velocity]
 #        util.info("Delta is " + str(delta))
         self.position[0] += delta[0]
@@ -93,7 +107,8 @@ class Particle:
         # Bounce particles off edge of simulation
         simulation = [params.simulation_width, params.simulation_height, params.simulation_depth]
         for i in range(3):
-            while self.position[i] < 0 or self.position[i] > simulation[i]:
+            while self.position[i] - self.radius < 0 or\
+                    self.position[i] + self.radius > simulation[i]:
                 util.debug("I am out of bounds: " + str(self.position) + " and I am going this fast:" + str(self.velocity))
                 self.velocity[i] *= -1
                 self.position[i] = self.position[i]*-1 if self.position[i] < 0\
