@@ -7,7 +7,7 @@
         "simulation_depth": 1000,
         "simulation_depth": 1000,
         "timsteps_per_second": 474.460190765778
-    }
+    },
     "particles": [
         {
             "particle_id": 0,

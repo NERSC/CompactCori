@@ -180,8 +180,8 @@ def main():
         threading.Thread(target=server.serve_forever).start()
 
     iterations = 0
-#    while True:
-    for i in range(100):
+    while True:
+#    for i in range(100):
 
         # Timing
         samples = 100
@@ -212,7 +212,7 @@ def main():
             param_endpoint += "        \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
             param_endpoint += "        \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
             param_endpoint += "        \"timsteps_per_second\": " + str(params.timesteps_per_second) + "\n"
-            param_endpoint += "    }\n"
+            param_endpoint += "    },\n"
 
             particles_endpoint = "    \"particles\": [\n"
             for key, partition in params.partitions.items():
