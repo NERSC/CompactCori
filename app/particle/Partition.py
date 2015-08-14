@@ -148,6 +148,7 @@ class Partition:
            ...
         """
         right, left = self.handoff_neighboring_particles()
+        self.neighbor_particles = set()
 
         if params.rank == 1:
             self.neighboring_sendrecv(right, self.thread_num + 1, 1)

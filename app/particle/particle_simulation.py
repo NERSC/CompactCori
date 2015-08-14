@@ -83,9 +83,9 @@ if params.rank is 0:
         position = [random.randint(radius, params.simulation_width - 1),
                     random.randint(radius, params.simulation_height - 1),
                     random.randint(radius, params.simulation_depth - 1)]
-        velocity = [random.randint(0,radius//2),
-                    random.randint(0,radius//2),
-                    random.randint(0,radius//2)]
+        velocity = [random.randint(0,radius//4),
+                    random.randint(0,radius//4),
+                    random.randint(0,radius//4)]
         mass = 3#random.randint(1,10)
         thread_num = util.determine_particle_thread_num(position[0])
         new_particle = Particle(i, thread_num, position, velocity, mass, radius)
@@ -175,7 +175,8 @@ def main():
     if params.rank is 0:
         from http.server import HTTPServer
         port_number = 8080
-        server = HTTPServer(("127.0.0.1", port_number), Server)
+        host = "127.0.0.1"
+        server = HTTPServer((host, port_number), Server)
         util.info("Starting server on port " +  str(port_number) + ", ^c to exit")
         threading.Thread(target=server.serve_forever).start()
 

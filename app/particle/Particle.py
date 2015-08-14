@@ -102,16 +102,16 @@ class Particle:
         self.position[2] += delta[2]
 
         if any(d > self.radius for d in delta):
-            util.debug("A particle is moving a distance of more than self.radius")
+            util.debug(str(self.particle_id) + " is moving a distance of more than self.radius")
 
         # Bounce particles off edge of simulation
         simulation = [params.simulation_width, params.simulation_height, params.simulation_depth]
         for i in range(3):
-            while self.position[i] - self.radius < 0 or\
-                    self.position[i] + self.radius > simulation[i]:
-                util.debug("I am out of bounds: " + str(self.position) + " and I am going this fast:" + str(self.velocity))
+            while self.position[i] < 0 or self.position[i]  > simulation[i]:
+                util.debug(str(self.particle_id) + " is out of bounds: " + str(self.position) + " and is going this fast:" + str(self.velocity))
                 self.velocity[i] *= -1
                 self.position[i] = self.position[i]*-1 if self.position[i] < 0\
                     else 2*simulation[i] - self.position[i]
 #            util.debug("I am no longer out of bounds: " + str(self.position))
 #        util.info("Particle " + str(self.particle_id) + " with mass " + str(self.mass) + " is at " + str(self.position))
+        util.info("Particle " + str(self.particle_id) + " is moving: " + str(self.velocity))
