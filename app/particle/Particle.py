@@ -76,8 +76,8 @@ class Particle:
         if len(self.neighbors) > 1:
             util.debug("There are multiple collisions happening at once")
 
-    def update_velocity(self):
-        """Update the velocity of this particle assuming an elastic collision"""
+    def update_temp_velocity(self):
+        """Update a temporary velocity of this particle assuming an elastic collision"""
         collision_mass = 0
         collision_velocity = [0, 0, 0]            # The velocity of the entire system that's colliding
         for neighbor, distances in self.neighbors:
@@ -87,9 +87,14 @@ class Particle:
 
         mass_difference = self.mass - collision_mass
         mass_sum = self.mass + collision_mass
+        self.temp_velocity = [0, 0, 0]
         for i in range(3):
-            self.velocity[i] = (mass_difference/mass_sum) * self.velocity[i] +\
+            self.temp_velocity[i] = (mass_difference/mass_sum) * self.velocity[i] +\
                     ((2*collision_mass)/mass_sum)*collision_velocity[i]
+
+    def update_velocity(self):
+        """Update the velocity attribute of this particle"""
+        self.velocity = self.temp_velocity
 
     def update_position(self, time):
         """Update the position of this Particle based on the velocity of the
@@ -108,7 +113,7 @@ class Particle:
         simulation = [params.simulation_width, params.simulation_height, params.simulation_depth]
         for i in range(3):
             while self.position[i] < 0 or self.position[i]  > simulation[i]:
-                util.debug(str(self.particle_id) + " is out of bounds: " + str(self.position) + " and is going this fast:" + str(self.velocity))
+#                util.debug(str(self.particle_id) + " is out of bounds: " + str(self.position) + " and is going this fast:" + str(self.velocity))
                 self.velocity[i] *= -1
                 self.position[i] = self.position[i]*-1 if self.position[i] < 0\
                     else 2*simulation[i] - self.position[i]

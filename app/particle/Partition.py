@@ -175,6 +175,8 @@ class Partition:
         for particle in self.particles:
             particle.populate_neighbors(self.particles | self.neighbor_particles)
         for particle in self.particles:
+            particle.update_temp_velocity()
+        for particle in self.particles:
             particle.update_velocity()
         for particle in self.particles:
             particle.update_position(params.dt)
