@@ -59,6 +59,8 @@ parser.add_argument("--depth", type=int,
         help = "depth of simulation ")
 parser.add_argument("-d", "--dt", type=float,
         help = "time constant")
+parser.add_argument("-f", "--force", type=float,
+        help = "force constant")
 args = parser.parse_args()
 
 params.num_particles = args.numparticles if args.numparticles else 100
@@ -66,6 +68,7 @@ params.simulation_height = args.height if args.height else 1000
 params.simulation_width = args.width if args.width else 1000
 params.simulation_depth = args.depth if args.depth else 1000
 params.dt = args.dt if args.dt else 0.0005
+params.force = args.force if args.force else 1000
 params.num_active_workers = 0
 params.new_num_active_workers = 0
 params.partitions = {}
@@ -79,7 +82,7 @@ if params.rank is 0:
 
     # Create Particles for Partitions
     for i in range(params.num_particles):
-        radius = random.randint(1, params.max_radius)
+        radius = 30#random.randint(1, params.max_radius)
         position = [random.randint(radius, params.simulation_width - 1),
                     random.randint(radius, params.simulation_height - 1),
                     random.randint(radius, params.simulation_depth - 1)]

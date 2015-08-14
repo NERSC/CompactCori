@@ -42,18 +42,19 @@ class Particle:
 #        util.info("Dict looks like: " + str(particle_dict))
 #        del particle_dict['neighbors']
 #        util.info("Now it looks like: " + str(particle_dict))
-#        json = json.dumps(particle_dict, default=lambda obj: obj.__dict__, sort_keys = True, indent=4)
-#        util.info("And now it looks like: " + str(particle_dict))
+#        json = json.dumps(particle_dict, sort_keys = True, indent=4)
+##        json = json.dumps(particle_dict, default=lambda obj: obj.__dict__, sort_keys = True, indent=4)
+#        util.info("And now it looks like: " + str(json))
 #        json = "\n".join((" " * indent) + i for i in json.splitlines())
 
-        json =  "        {\n"
-        json += "            \"particle_id\": " + str(self.particle_id) + ",\n"
-        json += "            \"thread_num\": " + str(self.thread_num) + ",\n"
-        json += "            \"position\": " + str(self.position) + ",\n"
-        json += "            \"velocity\": " + str(self.velocity) + ",\n"
-        json += "            \"mass\": " + str(self.mass) + ",\n"
-        json += "            \"radius\": " + str(self.radius) + "\n"
-        json += "        },\n"
+        json =  " " * indent + "{\n"
+        json += " " * 2 * indent + "\"particle_id\": " + str(self.particle_id) + ",\n"
+        json += " " * 2 * indent + "\"thread_num\": " + str(self.thread_num) + ",\n"
+        json += " " * 2 * indent + "\"position\": " + str(self.position) + ",\n"
+        json += " " * 2 * indent + "\"velocity\": " + str(self.velocity) + ",\n"
+        json += " " * 2 * indent + "\"mass\": " + str(self.mass) + ",\n"
+        json += " " * 2 * indent + "\"radius\": " + str(self.radius) + "\n"
+        json += " " * indent + "},\n"
         return json
 
     def euclidean_distance_to(self, particle):
@@ -72,29 +73,17 @@ class Particle:
         for particle in particles:
             euclidean_distance, distances = self.euclidean_distance_to(particle)
             if euclidean_distance <= 0 and particle is not self:
-                self.neighbors.append((particle, distances))
+                self.neighbors.append((particle, distances, euclidean_distance))
         if len(self.neighbors) > 1:
             util.debug("There are multiple collisions happening at once")
 
-    def update_temp_velocity(self):
+    def update_velocity(self):
         """Update a temporary velocity of this particle assuming an elastic collision"""
         collision_mass = 0
         collision_velocity = [0, 0, 0]            # The velocity of the entire system that's colliding
-        for neighbor, distances in self.neighbors:
-            collision_mass += neighbor.mass
+        for neighbor, distances, euclidean_distance in self.neighbors:
             for i in range(3):
-                collision_velocity[i] += neighbor.velocity[i]
-
-        mass_difference = self.mass - collision_mass
-        mass_sum = self.mass + collision_mass
-        self.temp_velocity = [0, 0, 0]
-        for i in range(3):
-            self.temp_velocity[i] = (mass_difference/mass_sum) * self.velocity[i] +\
-                    ((2*collision_mass)/mass_sum)*collision_velocity[i]
-
-    def update_velocity(self):
-        """Update the velocity attribute of this particle"""
-        self.velocity = self.temp_velocity
+                self.velocity[i] += params.force * (-1 * (distances[i])/euclidean_distance**3)/self.mass
 
     def update_position(self, time):
         """Update the position of this Particle based on the velocity of the
@@ -119,4 +108,4 @@ class Particle:
                     else 2*simulation[i] - self.position[i]
 #            util.debug("I am no longer out of bounds: " + str(self.position))
 #        util.info("Particle " + str(self.particle_id) + " with mass " + str(self.mass) + " is at " + str(self.position))
-        util.info("Particle " + str(self.particle_id) + " is moving: " + str(self.velocity))
+#        util.info("Particle " + str(self.particle_id) + " is moving: " + str(self.velocity))
