@@ -248,8 +248,6 @@ class Partition:
 
     def update_master(self):
         """Update the master node with new particles"""
-#        if len(self.particles) is not 0:
-#            util.debug("Rank " + str(params.rank) + " is sending back " + str(len(self.particles)) + " particles")
         params.comm.send(self.particles, tag = 0)
 
     def receive_new_particles(self):

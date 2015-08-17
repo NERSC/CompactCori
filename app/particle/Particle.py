@@ -89,7 +89,6 @@ class Particle:
         Particle
         """
         delta = [component*time for component in self.velocity]
-#        util.info("Delta is " + str(delta))
         self.position[0] += delta[0]
         self.position[1] += delta[1]
         self.position[2] += delta[2]
@@ -101,10 +100,6 @@ class Particle:
         simulation = [params.simulation_width, params.simulation_height, params.simulation_depth]
         for i in range(3):
             while self.position[i] < 0 or self.position[i]  > simulation[i]:
-#                util.debug(str(self.particle_id) + " is out of bounds: " + str(self.position) + " and is going this fast:" + str(self.velocity))
                 self.velocity[i] *= -1
                 self.position[i] = self.position[i]*-1 if self.position[i] < 0\
                     else 2*simulation[i] - self.position[i]
-#            util.debug("I am no longer out of bounds: " + str(self.position))
-#        util.info("Particle " + str(self.particle_id) + " with mass " + str(self.mass) + " is at " + str(self.position))
-#        util.info("Particle " + str(self.particle_id) + " is moving: " + str(self.velocity))

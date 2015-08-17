@@ -12,9 +12,6 @@ Threads 1-n correspond to the n partitions that do computational work.
 
 Speedup could possibly occur by using numpy instead of arrays/lists
 
-
-TODO: Change so bouncing happens not at centre of particle
-
 Author: Nicholas Fong
         Lawrence Berkeley National Laboratory
         National Energy Research Scientific Computing Center
@@ -184,8 +181,6 @@ def main():
 
     iterations = 0
     while True:
-#    for i in range(100):
-
         # Timing
         samples = 100
         iterations += 1
@@ -221,12 +216,9 @@ def main():
             particles_endpoint = "    \"particles\": [\n"
             for key, partition in params.partitions.items():
                 for particle in partition.particles:
-#                    particle.neighbors = ""
-#                    particles_endpoint += particle.jsonify()#json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=4) + ",\n"
-                    particles_endpoint += particle.jsonify()#json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=4) + ",\n"
-
+#                    particles_endpoint += json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=4) + ",\n"
+                    particles_endpoint += particle.jsonify()
             particles_endpoint = particles_endpoint[:-2] # trim extra comma
-
             endpoint = "{\n" + param_endpoint + particles_endpoint + "\n    ]\n}\n"
 
 if __name__ == "__main__":
