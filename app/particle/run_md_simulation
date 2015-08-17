@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# run_md_simulation - run the MD simulation on Compact Cori
+#
+# Author: Nicholas Fong
+#         Lawrence Berkeley National Laboratory
+#         National Energy Research Scientific Computing Center
+#
+# Usage: run_md_simulation [num_tasks] [num_particlecs]
+#
+# Acknowledgment:
+#        This work was supported by the Director, Office of Science,
+#        Division of Mathematical, Information, and Computational
+#        Sciences of the U.S. Department of Energy under contract
+#        DE-AC02-05CH11231, using resources of the National Energy Research
+#        Scientific Computing Center.
+#
+# Update History:
+# YYYY-MM-DD INITIALS - DESCRIPTION
+# *****************************************************************************
+# 2015-08-12 NF       - Wrote initial script
+
+PROG=$(basename $0)
+
+error() {
+    echo -e "ERROR: $*" >&2
+    exit 1
+}
+
+usage() {
+    echo "USAGE: $PROG [num_tasks] [num_particlecs]"
+
+}
+
+test $# -ne 2 && error "too few arguments" && usage
+
+for i in {2..15}; do
+    scp -r ~/CompactCori/app/particle/* compactcori$i:~/CompactCori/app/particle/
+done
+
+mpirun -n $1 --hostfile /home/ccori/mpihostsfile python3 ~/CompactCori/app/particle/particle_simulation.py -n $2
+

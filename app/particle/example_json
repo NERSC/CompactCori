@@ -1,0 +1,54 @@
+{
+    "params": {
+        "num_particles": 5,
+        "num_active_workers": 4,
+        "simulation_height": 1000,
+        "simulation_width": 1000,
+        "simulation_depth": 1000,
+        "simulation_depth": 1000,
+        "timsteps_per_second": 474.460190765778
+    },
+    "particles": [
+        {
+            "particle_id": 0,
+            "thread_num": 2,
+            "position": [362.2999999999986, 86.1499999999993, 708.0499999999988],
+            "velocity": [6.0, 3.0, 1.0],
+            "mass": 3,
+            "radius": 12
+        },
+        {
+            "particle_id": 4,
+            "thread_num": 2,
+            "position": [452.0, 569.3500000000031, 948.3000000000043],
+            "velocity": [0.0, 7.0, 6.0],
+            "mass": 3,
+            "radius": 14
+        },
+        {
+            "particle_id": 2,
+            "thread_num": 2,
+            "position": [254.2999999999986, 249.2999999999986, 803.4500000000007],
+            "velocity": [6.0, 6.0, 9.0],
+            "mass": 3,
+            "radius": 30
+        },
+        {
+            "particle_id": 3,
+            "thread_num": 2,
+            "position": [453.15000000000214, 663.4999999999995, 427.3499999999974],
+            "velocity": [3.0, 10.0, 7.0],
+            "mass": 3,
+            "radius": 31
+        },
+        {
+            "particle_id": 1,
+            "thread_num": 4,
+            "position": [815.1999999999953, 587.3000000000043, 111.1499999999993],
+            "velocity": [4.0, 6.0, 3.0],
+            "mass": 3,
+            "radius": 18
+        }
+    ]
+}
+
