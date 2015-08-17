@@ -83,7 +83,12 @@ class Particle:
         collision_velocity = [0, 0, 0]            # The velocity of the entire system that's colliding
         for neighbor, distances, euclidean_distance in self.neighbors:
             for i in range(3):
-                self.velocity[i] += params.force * (-1 * (distances[i])/euclidean_distance**3)/self.mass
+                force = params.force * (-1 * (distances[i])/euclidean_distance**3)/self.mass
+                if force > 10:
+                    force = 10
+                elif force < -10:
+                    force = -10
+                self.velocity[i] += force
 
     def update_position(self, time):
         """Update the position of this Particle based on the velocity of the
