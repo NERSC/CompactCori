@@ -1,0 +1,219 @@
+\documentclass{article}
+
+\usepackage{fancyhdr}
+\usepackage{extramarks}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{courier}
+\usepackage{hyperref}
+
+\def\versionnumber{1.0.0}
+
+% Margins
+\topmargin=-0.45in
+\evensidemargin=0in
+\oddsidemargin=0in
+\textwidth=6.5in
+\textheight=9.0in
+\headsep=0.25in
+
+\pagestyle{fancy}
+\lhead{Compact Cori Setup Documentation}
+\chead{}
+\rhead{\today}
+\cfoot{}
+\lfoot{National Energy Research Scientific Computing Center}
+\rfoot{\thepage}
+\renewcommand\headrulewidth{0.4pt} % Size of the header rule
+\renewcommand\footrulewidth{0.4pt} % Size of the footer rule
+
+\setlength\parindent{0pt} % Removes all indentation from paragraphs
+
+\definecolor{MyDarkGreen}{rgb}{0.0,0.4,0.0} % This is the color used for comments
+\lstloadlanguages{Verilog}
+\lstset{language=Python,
+        frame=single,
+        basicstyle=\small\ttfamily,
+        keywordstyle=[1]\color{Blue}\bf,
+        keywordstyle=[2]\color{Purple},
+        keywordstyle=[3]\color{Red},
+        identifierstyle=,
+        commentstyle=\usefont{T1}{pcr}{m}{sl}\color{MyDarkGreen}\small,
+        stringstyle=\color{Purple},
+        showstringspaces=false,
+        tabsize=2,
+        morecomment=[l][\color{Blue}]{...},
+        numbers=left,
+        numberstyle=\tiny,
+        breaklines=true
+}
+
+\begin{document}
+\title{\textsc{Compact Cori Setup Documentation}\\ Version \versionnumber}
+\author {Nick Fong\\nbfong[at]lbl.gov}
+\maketitle
+\tableofcontents
+
+\section{Introduction}
+Compact Cori is an Intel-NUC based cluster that is designed to incorporate
+elements of Cori, NERSC's next supercomputer (NERSC-8).  Both Cori and Compact
+Cori will live in NERSC's new Computational Research and Theory building.  Like
+the NUCs that make up Compact Cori, Cori Phase I will use Haswell processors.
+
+\section{Parts}
+These are the specific parts that were ordered to create Compact Cori.  Patch
+cables were created with existing spools of cable.  The cluster will be
+connected to a 70" monitor when it is on display at CRT.  The cluster is housed
+in a custom fabricated acrylic display from TAP Plastics.
+\begin{center}
+    \begin{tabular}{| c | l | l | p{3cm} |}
+        \hline
+        \textbf{Quantity} & \textbf{Description} & \textbf{Link} & \textbf{Notes}\\
+        \hline
+        16 & Intel NUC & http://amzn.com/B00SD9IS1S & \\
+        \hline
+        16 & 16 GiB DDR3 Memory & http://amzn.com/B007B5S52C & At least 8 GiB of
+        memory per NUC is recommended\\
+        \hline
+        16 & 256GB 2.5" SSD & http://amzn.com/B00KFAGCWK & Alternatively
+        purchase a M.2 SSD\\
+        \hline
+        16 & USB Status Lights & http://amzn.com/B00W3D3IKQ & \\
+        \hline
+        1 & 16 port switch & http://amzn.com/B000063UZW & \\
+        \hline
+        1 & USB to Ethernet Adapter & http://amzn.com/B00ET4KHJ2 & To connect
+        the master node to the outside world\\
+        \hline
+    \end{tabular}
+\end{center}
+
+\section{Hardware Setup}
+    \subsection{Install Persistent Storage and Memory}
+    \begin{enumerate}
+        \item Remove the four screws on the bottom of each NUC
+        \item Install the SSD by sliding it into the SSD cage.  Ensure that the SATA
+            connectors are properly aligned
+        \item To install a M.2 SSD, follow the directions in the NUC's Getting Started
+            Guide
+        \item Install the memory
+    \end{enumerate}
+    \subsection{Install Debian}
+    \begin{enumerate}
+        \item Download a stable version of Debian (for \texttt{amd64}) as an ISO
+        \item Create a bootable flash drive:\\
+            On OS X:
+            \begin{enumerate}
+                \item Determine the name of the flash drive using
+                    \texttt{diskutil list}
+                \item Unmount the flash drive by using the disk identifier,
+                    substituting \texttt{diskN} for the name found in the
+                    previous step:\\
+                    \texttt{diskutil unmountDisk /dev/diskN}
+                \item Copy the ISO, again substituting \texttt{rdiskN} for the
+                    name found earlier:\\
+                    \texttt{sudo dd if=image.iso of=/dev/rdiskN}
+            \end{enumerate}
+            On Linux:
+            \begin{enumerate}
+                \item Determine the name of the removable SCSI disk
+                    corresponding to your flash drive using
+                    \texttt{lsblk}
+                \item Copy the ISO, substituting \texttt{sdN} with the name of
+                    the disk:\\
+                    \texttt{sudo dd if=image.iso of=/dev/sdN}
+            \end{enumerate}
+        \item Install Debian on each node.  Also create a regular user (in our case
+            \texttt{ccori}).
+    \end{enumerate}
+
+
+\section{Software Setup}
+    Once your nodes can boot into Debian, run the setup scripts to
+    \subsection{Run the Setup Scripts on each Slave Node}
+    Perform the following on each slave node (nodes 2 - $n$):
+        \begin{enumerate}
+            \item Install \texttt{git}:\\
+                \begin{lstlisting}[language=bash]
+apt-get install git
+                \end{lstlisting}
+
+            \item Clone the CompactCori repository as the root user:\\
+                \begin{lstlisting}[language=bash]
+git clone https://github.com/NERSC/CompactCori
+                \end{lstlisting}
+            \item Make the setup script executable and run it, providing the number
+                of the node you're setting up to the \texttt{-n} flag and the
+                standard username that you set up earlier to the \texttt{-u} flag:
+                \begin{lstlisting}[language=bash]
+chmod 700 CompactCori/setup/compact_cori_setup
+CompactCori/setup/compact_cori_setup -u [username] -n [nodenumber]
+                \end{lstlisting}
+            \item After running the setup script, connect the NUC to the switch for
+        \end{enumerate}
+
+    \subsection{Run the Setup Script on the Master Node}:
+        \begin{enumerate}
+            \item Install \texttt{git}:\\
+                \begin{lstlisting}[language=bash]
+apt-get install git
+                \end{lstlisting}
+
+            \item Clone the CompactCori repository as the root user:\\
+                \begin{lstlisting}[language=bash]
+git clone https://github.com/NERSC/CompactCori
+                \end{lstlisting}
+            \item Make the setup script executable and run it, providing the
+                standard username that you set up earlier to the \texttt{-u}
+                flag:
+                \begin{lstlisting}[language=bash]
+chmod 700 CompactCori/setup/compact_cori_setup
+CompactCori/setup/compact_cori_setup -u [username] -n 1
+                \end{lstlisting}
+            \item Run the master setup script, providing the number of the node
+                you're setting up to the \texttt{-n} flag and the standard
+                username that you set up earlier to the \texttt{-u} flag:
+                \begin{lstlisting}[language=bash]
+chmod 700 CompactCori/setup/compact_cori_master_setup
+CompactCori/setup/compact_cori_master_setup -u [username] -n [numnodes]
+                \end{lstlisting}
+        \end{enumerate}
+
+\subsection{Set Up Root SSH Keys}
+
+\subsection{Set Up \texttt{PDSH}}
+
+\section{Hardware Setup for Enclosure}
+\begin{enumerate}
+    \item For each NUC, open the bottom plate and detach the SATA cable from the
+        motherboard.
+    \item Remove the four screws holding the SSD sled to the bottom of the NUC
+    \item Remove the two black screws that hold the SATA cable to the sled
+    \item Remove the SATA cable
+    \item Remove the two black screws on either side of the motherboard
+    \item Detach the wireless card connectors (grey and black wires) that
+        connect the motherboard to the metal of the case by gently pulling them
+        up, perpendicular to the motherboard
+    \item Gently flip the NUC over and slowly work the motherboard from the
+        enclosure
+\end{enumerate}
+
+\section{Python-Based MD Simulation Technical Documentation}
+\subsection{Files}
+\subsection{Classes}
+\subsection{MPI}
+\subsection{API}
+
+\section{Acknowledgements}
+This work was supported by the Director, Office of Science, Division of
+Mathematical, Information, and Computational Sciences of the U.S. Department of
+Energy under contract DE-AC02-05CH11231.\\
+
+This research used resources of the National Energy Research Scientific
+Computing Center, which is supported by the Office of Science of the U.S.
+Department of Energy.
+
+\end{document}
+
+

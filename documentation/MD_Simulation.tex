@@ -1,0 +1,97 @@
+\documentclass{article}
+
+\usepackage{fancyhdr}
+\usepackage{extramarks}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{courier}
+\usepackage{hyperref}
+
+\def\versionnumber{1.0.0}
+
+% Margins
+\topmargin=-0.45in
+\evensidemargin=0in
+\oddsidemargin=0in
+\textwidth=6.5in
+\textheight=9.0in
+\headsep=0.25in
+
+\pagestyle{fancy}
+\lhead{Compact Cori Python MD Simulation Documentation}
+\chead{}
+\rhead{\today}
+\cfoot{}
+\lfoot{National Energy Research Scientific Computing Center}
+\rfoot{\thepage}
+\renewcommand\headrulewidth{0.4pt} % Size of the header rule
+\renewcommand\footrulewidth{0.4pt} % Size of the footer rule
+
+\setlength\parindent{0pt} % Removes all indentation from paragraphs
+
+\definecolor{MyDarkGreen}{rgb}{0.0,0.4,0.0} % This is the color used for comments
+\lstloadlanguages{Verilog}
+\lstset{language=Python,
+        frame=single,
+        basicstyle=\small\ttfamily,
+        keywordstyle=[1]\color{Blue}\bf,
+        keywordstyle=[2]\color{Purple},
+        keywordstyle=[3]\color{Red},
+        identifierstyle=,
+        commentstyle=\usefont{T1}{pcr}{m}{sl}\color{MyDarkGreen}\small,
+        stringstyle=\color{Purple},
+        showstringspaces=false,
+        tabsize=2,
+        morecomment=[l][\color{Blue}]{...},
+        numbers=left,
+        numberstyle=\tiny,
+        breaklines=true
+}
+
+\begin{document}
+\title{\textsc{Compact Cori Python MD Simulation Documentation}\\ Version \versionnumber}
+\author {Nick Fong\\nbfong[at]lbl.gov}
+\maketitle
+\tableofcontents
+
+\section{Introduction}
+
+\section{Files}
+\subsection{particle\_simulation.py}
+This file contains the logic that links the simulation together.  Particles and
+Partitions are created, and timesteps are performed.  The RESTful API endpoints
+are created here.
+\subsection{util.py}
+This file contains utility functions that may be used from any other file after
+\texttt{util.py} is imported.  This helps keep things DRY.
+\subsection{params.py}
+This file contains global parameters for the simulation to avoid having to pass
+around multiple parameters for each method.  Note that when a variable in
+\texttt{params.py} is updated in \texttt{Partition}, for example, the change is
+reflected in \texttt{Particle} as well.  However, if a change is made on MPI
+task 3, the change is not reflected on MPI task 2.
+\subsection{Particle.py}
+This class holds attributes of each particle in the simulation.  In addition,
+the class contains methods to update the Particle's attributes based on
+neighboring Particles' properties.
+\subsection{Partition.py}
+A Partition helps abstract what one MPI slave task works on.  Each task has its
+own partition that corresponds to a volume of the simulation.  Particles are
+owned by a Partition, and are passed between Partitions.
+\section{Classes}
+\section{MPI}
+\section{API}
+
+\section{Acknowledgements}
+This work was supported by the Director, Office of Science, Division of
+Mathematical, Information, and Computational Sciences of the U.S. Department of
+Energy under contract DE-AC02-05CH11231.\\
+
+This research used resources of the National Energy Research Scientific
+Computing Center, which is supported by the Office of Science of the U.S.
+Department of Energy.
+
+\end{document}
+
+
