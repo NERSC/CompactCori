@@ -109,7 +109,6 @@ def timestep():
         for i in range(1, params.num_active_workers+1):
             new_particles = params.comm.recv(source = mpi.ANY_SOURCE, status = params.mpi_status, tag = 0)
             params.partitions[params.mpi_status.Get_source()].particles = new_particles
-        util.debug(str(params.partitions))
     elif params.rank <= params.num_active_workers:
         partition = params.partitions[params.rank]
         partition.send_and_receive_neighboring_particles()
@@ -202,6 +201,7 @@ def main():
         # Timing
         if (iterations % samples == 0) and params.rank == 0:
             params.timesteps_per_second = samples/(time.time() - start)
+            util.info(str(params.partitions))
             util.info("Average steps per second: " + str(params.timesteps_per_second))
 
         if params.rank is 0:
@@ -222,6 +222,7 @@ def main():
             for key, partition in params.partitions.items():
                 for particle in partition.particles:
 #                    particle.neighbors = ""
+#                    particles_endpoint += particle.jsonify()#json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=4) + ",\n"
                     particles_endpoint += particle.jsonify()#json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=4) + ",\n"
 
             particles_endpoint = particles_endpoint[:-2] # trim extra comma

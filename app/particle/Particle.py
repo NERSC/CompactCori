@@ -30,18 +30,14 @@ class Particle:
         self.velocity = velocity
         self.mass = mass
         self.radius = radius
-        self.neighbors = None
-        util.debug("I am a particle at " + str(self.position) + " and I am owned by " + str(self.thread_num))
 
     def jsonify(self, indent = 4):
         """Hacky conversion to JSON to avoid infinite loop with jsonify and
         nested neighbors
         """
-#       TODO: Debug this to DRY out this method
+##       TODO: Debug this to DRY out this method
 #        particle_dict = self.__dict__
 #        util.info("Dict looks like: " + str(particle_dict))
-#        del particle_dict['neighbors']
-#        util.info("Now it looks like: " + str(particle_dict))
 #        json = json.dumps(particle_dict, sort_keys = True, indent=4)
 ##        json = json.dumps(particle_dict, default=lambda obj: obj.__dict__, sort_keys = True, indent=4)
 #        util.info("And now it looks like: " + str(json))
@@ -65,29 +61,27 @@ class Particle:
         center_to_center = math.sqrt((x**2) + (y**2) + (z**2))
         return (center_to_center - self.radius - particle.radius, (x, y, z))
 
-    def populate_neighbors(self, particles):
+    def update_velocity(self, particles):
         """Populate the list of neighbors with particles that are colliding this
         particle
         """
-        self.neighbors = []
+        neighbors = []
         for particle in particles:
             euclidean_distance, distances = self.euclidean_distance_to(particle)
             if euclidean_distance <= 0 and particle is not self:
-                self.neighbors.append((particle, distances, euclidean_distance))
-        if len(self.neighbors) > 1:
-            util.debug("There are multiple collisions happening at once")
+                neighbors.append((particle, distances, euclidean_distance))
 
-    def update_velocity(self):
-        """Update a temporary velocity of this particle assuming an elastic collision"""
-        collision_mass = 0
-        collision_velocity = [0, 0, 0]            # The velocity of the entire system that's colliding
-        for neighbor, distances, euclidean_distance in self.neighbors:
+        for neighbor, distances, euclidean_distance in neighbors:
             for i in range(3):
-                force = params.force * (-1 * (distances[i])/euclidean_distance**3)/self.mass
+                max_force = 10
+                if euclidean_distance == 0:
+                    force = max_force
+                else:
+                    force = params.force * (-1 * (distances[i])/euclidean_distance**3)/self.mass
                 if force > 10:
-                    force = 10
+                    force = max_force
                 elif force < -10:
-                    force = -10
+                    force = -1*max_force
                 self.velocity[i] += force
 
     def update_position(self, time):

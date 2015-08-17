@@ -173,9 +173,9 @@ class Partition:
         Partition.  Update the velocity and the position of each particle
         """
         for particle in self.particles:
-            particle.populate_neighbors(self.particles | self.neighbor_particles)
-        for particle in self.particles:
-            particle.update_velocity()
+            particle.update_velocity(self.particles | self.neighbor_particles)
+#        for particle in self.particles:
+#            particle.update_velocity()
         for particle in self.particles:
             particle.update_position(params.dt)
 
