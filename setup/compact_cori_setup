@@ -40,7 +40,7 @@ usage() {
     echo "USAGE: $PROG -n node_number -u user_name"
 }
 
-while getopts "hn:" OPTION; do
+while getopts "hn:u:" OPTION; do
     case $OPTION in
         h)
             usage
