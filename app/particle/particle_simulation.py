@@ -35,8 +35,11 @@ import threading
 import json
 import time
 from urllib.parse import urlparse
+from urllib.parse import parse_qs
 from http.server import BaseHTTPRequestHandler
 from mpi4py import MPI as mpi
+import subprocess
+import os
 
 params.mpi = mpi
 params.comm = mpi.COMM_WORLD
@@ -65,12 +68,14 @@ params.simulation_height = args.height if args.height else 1000
 params.simulation_width = args.width if args.width else 1000
 params.simulation_depth = args.depth if args.depth else 1000
 params.dt = args.dt if args.dt else 0.0005
-params.force = args.force if args.force else 100
+#params.force = args.force if args.force else 100
+params.force = args.force if args.force else 100000
 params.num_active_workers = 0
 params.new_num_active_workers = 0
 params.partitions = {}
 params.max_radius = min(params.simulation_width, params.simulation_height, params.simulation_depth)//32
 params.timesteps_per_second = 0
+params.total_energy_of_system = 0.9
 
 if params.rank is 0:
     # Create partitions 1 through params.num_threads - 1
@@ -83,9 +88,9 @@ if params.rank is 0:
         position = [random.randint(radius, params.simulation_width - 1),
                     random.randint(radius, params.simulation_height - 1),
                     random.randint(radius, params.simulation_depth - 1)]
-        velocity = [5*random.randint(0,radius//4),
-                    5*random.randint(0,radius//4),
-                    5*random.randint(0,radius//4)]
+        velocity = [400*random.randint(0,radius//4),
+                    400*random.randint(0,radius//4),
+                    400*random.randint(0,radius//4)]
         mass = 3#random.randint(1,10)
         thread_num = util.determine_particle_thread_num(position[0])
         new_particle = Particle(i, thread_num, position, velocity, mass, radius)
@@ -99,14 +104,41 @@ params.partitions = params.comm.bcast(params.partitions)
 params.num_active_workers = params.comm.bcast(params.num_active_workers)
 update_params()
 
+colors = {
+    0: "255,255,255",
+
+    1: "255,000,000",
+    2: "255,102,000",
+    3: "255,204,000",
+    4: "204,255,000",
+    5: "102,255,000",
+
+    6: "000,255,000",
+    7: "000,255,102",
+    8: "000,255,204",
+    9: "000,204,255",
+    10: "000,102,255",
+
+    11: "000,000,255",
+    12: "102,000,255",
+    13: "204,000,255",
+    14: "255,000,204",
+    15: "255,000,102",
+}
+num_colors = len(colors)
+
+FNULL = open(os.devnull, 'w')
+
 # One timestep
 def timestep():
     """Only do something as a slave if an active worker"""
     if params.rank is 0:
+        subprocess.Popen(["blink1-tool --rgb=" + str(colors[0]) + " --blink=1, -m0, -t20"], shell=True, stdin=None, stdout=None, stderr=None, close_fds=True)
         for i in range(1, params.num_active_workers+1):
             new_particles = params.comm.recv(source = mpi.ANY_SOURCE, status = params.mpi_status, tag = 0)
             params.partitions[params.mpi_status.Get_source()].particles = new_particles
     elif params.rank <= params.num_active_workers:
+        subprocess.Popen(["blink1-tool --rgb=" + str(colors[params.rank % num_colors]) + " --blink=5, -m0, -t20"], shell=True, stdin=None, stdout=None, stderr=None, close_fds=True)
         partition = params.partitions[params.rank]
         partition.send_and_receive_neighboring_particles()
         partition.interact_particles()
@@ -114,24 +146,30 @@ def timestep():
         partition.update_master()
 
 def change_num_active_workers():
+    params.num_active_workers = params.new_num_active_workers
+    print("In change num_active_workers "+str(params.rank)+" "+str(params.num_active_workers))
     if params.rank is 0:
         if params.new_num_active_workers < 1 or params.new_num_active_workers > params.num_threads - 1:
             util.debug("Invalid number of active workers requested: " + params.new_num_active_workers)
 
         new_distribution = {}
-        for i in range(1, params.new_num_active_workers + 1):
+        for i in range(1, params.num_threads):
             new_distribution[i] = set()
 
         for partition_id, partition in params.partitions.items():
             for particle in partition.particles:
-                new_thread = util.determine_particle_thread_num(particle.position[0], params.new_num_active_workers)
+                new_thread = util.determine_particle_thread_num(particle.position[0])
                 particle.thread_num = new_thread
                 new_distribution[new_thread].add(particle)
 
-        for i in range(1, params.new_num_active_workers + 1):
+        for i in range(1, params.num_threads):
+            print("sending "+str(i))
+            params.partitions[i].particles = new_distribution[i]
             params.comm.send(new_distribution[i], dest = i, tag = 11)
     else:
+        print("receiving "+str(params.rank))
         params.partitions[params.rank].receive_new_particles()
+        #print("received "+str(params.rank))
 
 endpoint = "{\n}"
 class Server(BaseHTTPRequestHandler):
@@ -160,21 +198,30 @@ class Server(BaseHTTPRequestHandler):
             self.end_headers()
             length = int(self.headers["Content-Length"])
             post_data = self.rfile.read(length).decode("utf-8")
+            #post_data = self.rfile.read(length)
             # Parse data from POST
-
-#            # Print for debugging
-            pass
-#            self.wfile.write(str(post_data).encode("utf-8"))
-#            self.wfile.write("\n".encode("utf-8"))
+            print('Got a post ')
+            print(type(post_data))
+            print(post_data)
+            new_data = parse_qs(post_data)
+            print(type(new_data))
+            for x in new_data:
+               print(x)
+               print(new_data[x])
+            params.new_num_active_workers = int(new_data['num_workers'][0])
+            #change_num_active_workers()
         else:
             util.info("POST sent to " + str(parsed_path[2]))
+    def log_message(self, format, *args):
+        return
 
 def main():
     global endpoint
+
     if params.rank is 0:
         from http.server import HTTPServer
         port_number = 8080
-        host = "127.0.0.1"
+        host = "10.0.0.101"
         server = HTTPServer((host, port_number), Server)
         util.info("Starting server on port " +  str(port_number) + ", ^c to exit")
         threading.Thread(target=server.serve_forever).start()
@@ -188,10 +235,12 @@ def main():
         if (iterations % samples == 1) and params.rank == 0:
             start = time.time()
 
-        timestep()
+        # Any Changes to number of workers?
         update_params()
         if params.new_num_active_workers is not params.num_active_workers:
             change_num_active_workers()
+
+        timestep()
 
         # Timing
         if (iterations % samples == 0) and params.rank == 0:
@@ -209,16 +258,22 @@ def main():
             param_endpoint += "        \"simulation_height\": " + str(params.simulation_height) + ",\n"
             param_endpoint += "        \"simulation_width\": " + str(params.simulation_width) + ",\n"
             param_endpoint += "        \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
-            param_endpoint += "        \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
-            param_endpoint += "        \"timsteps_per_second\": " + str(params.timesteps_per_second) + "\n"
+            param_endpoint += "        \"timesteps_per_second\": " + str(params.timesteps_per_second) + ",\n"
+            param_endpoint += "        \"total_energy_of_system\": " + str(params.total_energy_of_system) + "\n"
             param_endpoint += "    },\n"
+
+            params.total_energy_of_system = 0
 
             particles_endpoint = "    \"particles\": [\n"
             for key, partition in params.partitions.items():
                 for particle in partition.particles:
-#                    particles_endpoint += json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=4) + ",\n"
                     particles_endpoint += particle.jsonify()
+                    params.total_energy_of_system += particle.velocity[0]**2 + particle.velocity[1]**2 + particle.velocity[2]**2
+
+            params.total_energy_of_system *= mass / 2
+
             particles_endpoint = particles_endpoint[:-2] # trim extra comma
+
             endpoint = "{\n" + param_endpoint + particles_endpoint + "\n    ]\n}\n"
 
 if __name__ == "__main__":

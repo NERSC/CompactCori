@@ -22,6 +22,7 @@ new_num_active_workers = None
 partitions = {}
 max_radius = None
 timesteps_per_second = None
+total_energy_of_system = None
 
 comm = None
 rank = None

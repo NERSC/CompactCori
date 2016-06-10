@@ -55,11 +55,12 @@ class Particle:
 
     def euclidean_distance_to(self, particle):
         """Return the 3D euclidean distance between this Particle and another"""
-        x = abs(self.position[0] - particle.position[0])
-        y = abs(self.position[1] - particle.position[1])
-        z = abs(self.position[2] - particle.position[2])
+        x = self.position[0] - particle.position[0]
+        y = self.position[1] - particle.position[1]
+        z = self.position[2] - particle.position[2]
         center_to_center = math.sqrt((x**2) + (y**2) + (z**2))
-        return (center_to_center - self.radius - particle.radius, (x, y, z))
+        #return (center_to_center - self.radius - particle.radius, (x, y, z))
+        return (center_to_center, (x, y, z))
 
     def update_velocity(self, particles):
         """Populate the list of neighbors with particles that are colliding this
@@ -68,19 +69,23 @@ class Particle:
         neighbors = []
         for particle in particles:
             euclidean_distance, distances = self.euclidean_distance_to(particle)
-            if euclidean_distance <= 0 and particle is not self:
+            #if euclidean_distance <= 0 and particle is not self:
+            if euclidean_distance <= 5*(self.radius + particle.radius) and particle is not self:
                 neighbors.append((particle, distances, euclidean_distance))
 
+        #p_energy = 0
+        max_force = 5000
         for neighbor, distances, euclidean_distance in neighbors:
+            #p_energy = p_energy + 5000 *( ( 1 / euclidean_distance ) - (1 / (5*(self.radius + particle.radius) ) )
             for i in range(3):
-                max_force = 10
+                #max_force = 10
                 if euclidean_distance == 0:
                     force = max_force
                 else:
-                    force = params.force * (-1 * (distances[i])/euclidean_distance**3)/self.mass
-                if force > 10:
+                    force = params.force * (1 * (distances[i])/euclidean_distance**3)/self.mass
+                if force > max_force:
                     force = max_force
-                elif force < -10:
+                elif force < -1*max_force:
                     force = -1*max_force
                 self.velocity[i] += force
 
@@ -89,17 +94,25 @@ class Particle:
         Particle
         """
         delta = [component*time for component in self.velocity]
+#        util.info("Delta is " + str(delta))
         self.position[0] += delta[0]
         self.position[1] += delta[1]
         self.position[2] += delta[2]
 
         if any(d > self.radius for d in delta):
             util.debug(str(self.particle_id) + " is moving a distance of more than self.radius")
+            self.velocity[0] = self.velocity[0]/2
+            self.velocity[1] = self.velocity[1]/2
+            self.velocity[2] = self.velocity[2]/2
 
         # Bounce particles off edge of simulation
         simulation = [params.simulation_width, params.simulation_height, params.simulation_depth]
         for i in range(3):
             while self.position[i] < 0 or self.position[i]  > simulation[i]:
+#                util.debug(str(self.particle_id) + " is out of bounds: " + str(self.position) + " and is going this fast:" + str(self.velocity))
                 self.velocity[i] *= -1
                 self.position[i] = self.position[i]*-1 if self.position[i] < 0\
                     else 2*simulation[i] - self.position[i]
+#            util.debug("I am no longer out of bounds: " + str(self.position))
+#        util.info("Particle " + str(self.particle_id) + " with mass " + str(self.mass) + " is at " + str(self.position))
+#        util.info("Particle " + str(self.particle_id) + " is moving: " + str(self.velocity))

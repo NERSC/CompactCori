@@ -9,11 +9,14 @@
 # Usage: run_md_simulation [num_tasks] [num_particlecs]
 #
 # Acknowledgment:
-#        This work was supported by the Director, Office of Science,
-#        Division of Mathematical, Information, and Computational
-#        Sciences of the U.S. Department of Energy under contract
-#        DE-AC02-05CH11231, using resources of the National Energy Research
-#        Scientific Computing Center.
+#         This work was supported by the Director, Office of Science,
+#         Division of Mathematical, Information, and Computational
+#         Sciences of the U.S. Department of Energy under contract
+#         DE-AC02-05CH11231.
+#
+#         This research used resources of the National Energy Research
+#         Scientific Computing Center, which is supported by the Office
+#         of Science of the U.S. Department of Energy.
 #
 # Update History:
 # YYYY-MM-DD INITIALS - DESCRIPTION
@@ -39,4 +42,5 @@ for i in {2..15}; do
 done
 
 mpirun -n $1 --hostfile /home/ccori/mpihostsfile python3 ~/CompactCori/app/particle/particle_simulation.py -n $2
+#mpirun -n $1 python3 ~/CompactCori/app/particle/particle_simulation.py -n $2
 
