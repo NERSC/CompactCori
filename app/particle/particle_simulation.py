@@ -75,7 +75,8 @@ params.new_num_active_workers = 0
 params.partitions = {}
 params.max_radius = min(params.simulation_width, params.simulation_height, params.simulation_depth)//32
 params.timesteps_per_second = 0
-params.total_energy_of_system = 0.9
+params.init_total_energy = 0.0
+params.curr_total_energy = 0.0
 
 if params.rank is 0:
     # Create partitions 1 through params.num_threads - 1
@@ -92,9 +93,12 @@ if params.rank is 0:
                     400*random.randint(0,radius//4),
                     400*random.randint(0,radius//4)]
         mass = 3#random.randint(1,10)
+        params.init_total_energy += 0.5 * mass * (velocity[0]**2 + velocity[1]**2 + velocity[2]**2)
         thread_num = util.determine_particle_thread_num(position[0])
         new_particle = Particle(i, thread_num, position, velocity, mass, radius)
         params.partitions[thread_num].add_particle(new_particle)
+
+    params.curr_total_energy = params.init_total_energy
 
 def update_params():
     params.new_num_active_workers = params.comm.bcast(params.new_num_active_workers)
@@ -133,12 +137,13 @@ FNULL = open(os.devnull, 'w')
 def timestep():
     """Only do something as a slave if an active worker"""
     if params.rank is 0:
-        subprocess.Popen(["blink1-tool --rgb=" + str(colors[0]) + " --blink=1, -m0, -t20"], shell=True, stdin=None, stdout=None, stderr=None, close_fds=True)
+#        threading.Thread(target=subprocess.call(["blink1-tool", "--rgb=" + str(colors[params.rank%4]), "--blink=1", "-m0", "-t20"],stdout=FNULL, stderr=subprocess.STDOUT)).start()
+        subprocess.Popen(["blink1-tool --rgb=" + str(colors[0]) + " --blink=1, -m0, -t20 > /dev/null"], shell=True, stdin=None, stdout=None, stderr=None, close_fds=True)
         for i in range(1, params.num_active_workers+1):
             new_particles = params.comm.recv(source = mpi.ANY_SOURCE, status = params.mpi_status, tag = 0)
             params.partitions[params.mpi_status.Get_source()].particles = new_particles
     elif params.rank <= params.num_active_workers:
-        subprocess.Popen(["blink1-tool --rgb=" + str(colors[params.rank % num_colors]) + " --blink=5, -m0, -t20"], shell=True, stdin=None, stdout=None, stderr=None, close_fds=True)
+        subprocess.Popen(["blink1-tool --rgb=" + str(colors[params.rank % num_colors]) + " --blink=5, -m0, -t20 > /dev/null"], shell=True, stdin=None, stdout=None, stderr=None, close_fds=True)
         partition = params.partitions[params.rank]
         partition.send_and_receive_neighboring_particles()
         partition.interact_particles()
@@ -245,8 +250,8 @@ def main():
         # Timing
         if (iterations % samples == 0) and params.rank == 0:
             params.timesteps_per_second = samples/(time.time() - start)
-            util.info(str(params.partitions))
-            util.info("Average steps per second: " + str(params.timesteps_per_second))
+#            util.info(str(params.partitions))
+#            util.info("Average steps per second: " + str(params.timesteps_per_second))
 
         if params.rank is 0:
             # Use a copy of endpoint to prevent queries to endpoint from
@@ -259,22 +264,48 @@ def main():
             param_endpoint += "        \"simulation_width\": " + str(params.simulation_width) + ",\n"
             param_endpoint += "        \"simulation_depth\": " + str(params.simulation_depth) + ",\n"
             param_endpoint += "        \"timesteps_per_second\": " + str(params.timesteps_per_second) + ",\n"
-            param_endpoint += "        \"total_energy_of_system\": " + str(params.total_energy_of_system) + "\n"
+            param_endpoint += "        \"total_energy\": " + str(params.curr_total_energy) + "\n"
             param_endpoint += "    },\n"
 
-            params.total_energy_of_system = 0
+            params.curr_total_energy = 0.0
 
             particles_endpoint = "    \"particles\": [\n"
             for key, partition in params.partitions.items():
                 for particle in partition.particles:
-                    particles_endpoint += particle.jsonify()
-                    params.total_energy_of_system += particle.velocity[0]**2 + particle.velocity[1]**2 + particle.velocity[2]**2
-
-            params.total_energy_of_system *= mass / 2
-
+#                    particle.neighbors = ""
+#                    particles_endpoint += particle.jsonify()#json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=4) + ",\n"
+                    particles_endpoint += particle.jsonify()#json.dumps(particle, default=lambda obj: obj.__dict__, sort_keys = True, indent=4) + ",\n"
+                    params.curr_total_energy += 0.5 * particle.mass * (particle.velocity[0]**2 + particle.velocity[1]**2 + particle.velocity[2]**2)
             particles_endpoint = particles_endpoint[:-2] # trim extra comma
 
+            util.debug('init_total_energy_______: ' + str(params.init_total_energy))
+
+            if True:
+#            if not iterations % 1000:
+                sqrt_ratio = math.sqrt(params.init_total_energy / params.curr_total_energy)
+#                ratio = params.init_total_energy / params.curr_total_energy
+                for key, partition in params.partitions.items():
+                    for particle in partition.particles:
+                        for i in range(3):
+                            particle.velocity[i] *= sqrt_ratio
+                    params.comm.send(partition.particles, dest=partition.thread_num, tag=99)
+                util.debug('curr_total_energy_before: ' + str(params.curr_total_energy))
+
+            # RM
+            if True:
+                params.curr_total_energy = 0.0
+#            if not iterations % 1000:
+                for key, partition in params.partitions.items():
+                    for particle in partition.particles:
+                        params.curr_total_energy += 0.5 * particle.mass * (particle.velocity[0]**2 + particle.velocity[1]**2 + particle.velocity[2]**2)
+                util.debug('curr_total_energy_after_: ' + str(params.curr_total_energy))
+            # RM
+
             endpoint = "{\n" + param_endpoint + particles_endpoint + "\n    ]\n}\n"
+#        elif not iterations % 1000:
+        else:
+            new_particles = params.comm.recv(source=0, status=params.mpi_status, tag=99)
+            params.partitions[params.rank].set_particles(new_particles)
 
 if __name__ == "__main__":
     main()
