@@ -52,7 +52,7 @@ class Partition:
         and not the number of threads, since the number of threads no longer
         necessarily correlates to the number of active workers
         """
-        self.delta_x = params.simulation_width//(params.num_active_workers - 1)
+        self.delta_x = params.simulation_width//(params.num_active_workers)
         self.start_x = self.delta_x*(self.thread_num-1)
         self.end_x = params.simulation_width if self.thread_num is params.num_active_workers else self.start_x + self.delta_x
 
@@ -151,7 +151,8 @@ class Partition:
         self.neighbor_particles = set()
 
         if params.rank == 1:
-            self.neighboring_sendrecv(right, self.thread_num + 1, 1)
+            if params.num_active_workers != 1:
+                self.neighboring_sendrecv(right, self.thread_num + 1, 1)
 
         elif params.rank == params.num_active_workers and params.rank % 2 == 0:
             self.neighboring_sendrecv(left, self.thread_num - 1, 1)
@@ -230,7 +231,8 @@ class Partition:
 
         # Send neighbors their new particles
         if params.rank == 1:
-            self.exchange_sendrecv(True, right, self.thread_num + 1, 1)
+            if params.num_active_workers != 1:
+                self.exchange_sendrecv(True, right, self.thread_num + 1, 1)
 
         elif params.rank == params.num_active_workers and params.rank % 2 == 0:
             self.exchange_sendrecv(False, left, self.thread_num - 1, 1)
@@ -248,13 +250,15 @@ class Partition:
 
     def update_master(self):
         """Update the master node with new particles"""
+#        if len(self.particles) is not 0:
+#            util.debug("Rank " + str(params.rank) + " is sending back " + str(len(self.particles)) + " particles")
         params.comm.send(self.particles, tag = 0)
 
     def receive_new_particles(self):
         """Receive new particle set after changing the number of threads"""
-        new_particles = params.comm.recv(source = 1, tag = 11)
+        new_particles = params.comm.recv(source = 0, tag = 11)
         self.set_particles(new_particles)
-        self.update_start_x()
+        #self.update_start_x()
         self.update_start_end()
 
     def __repr__(self):
