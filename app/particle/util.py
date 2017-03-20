@@ -58,7 +58,6 @@ def validate_particle_set(*args):
 
 def determine_particle_thread_num(x_position):
     result = math.ceil((x_position/params.simulation_width)*params.num_active_workers)
-    #print("Got that the thread num should be "+str(result)+"given: x_position " + str(x_position) + " simulation_width of " + str(params.simulation_width) + " and with " + str(params.new_num_active_workers) + " active workers")
     if result == 0:
         debug("Got that the thread num should be 0 given: x_position " + str(x_position) + " simulation_width of " + str(params.simulation_width) + " and with " + str(params.num_active_workers) + " active workers")
     return result
@@ -68,4 +67,3 @@ def determine_new_particle_thread_num(x_position):
     if result == 0:
         debug("Got that the thread num should be 0 given: x_position " + str(x_position) + " simulation_width of " + str(params.simulation_width) + " and with " + str(params.new_num_active_workers) + " active workers")
     return result
-
