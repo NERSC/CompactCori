@@ -139,25 +139,22 @@ params.num_active_workers = params.comm.bcast(params.num_active_workers)
 update_new_num_active_workers()
 
 colors = {
-    0: "255,255,255",
-
-    1: "255,000,000",
-    2: "255,255,000",
-    3: "000,255,000",
-    4: "000,255,255",
-    5: "000,000,255",
-    6: "255,000,255",
-
-    7: "255,000,000",
-    8: "255,255,000",
-    9: "000,255,000",
-    10: "000,255,255",
-    11: "000,000,255",
-    12: "255,000,255",
-
-    13: "255,000,000",
-    14: "255,255,000",
-    15: "000,255,000",
+    0: "255,255,255", # white
+    1: "255,000,000", # red
+    2: "255,255,000", # yellow
+    3: "000,255,000", # green
+    4: "000,255,255", # cyan
+    5: "000,000,255", # blue
+    6: "255,000,255", # magenta
+    7: "255,000,000", # red
+    8: "255,255,000", # yellow
+    9: "000,255,000", # green
+    10: "000,255,255", # cyan
+    11: "000,000,255", # blue
+    12: "255,000,255", # magenta
+    13: "255,000,000", # red
+    14: "255,255,000", # yellow
+    15: "000,255,000", # green
 }
 
 FNULL = open(os.devnull, 'w')
@@ -250,7 +247,7 @@ def main():
         ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
         ssl_context.load_cert_chain(certfile='/home/ccori/ssl/cc.crt', keyfile='/home/ccori/ssl/cc.key')
         port_number = 8080
-        host = "10.0.0.113"
+        host = "10.0.0.101"
         server = HTTPServer((host, port_number), Server)
         server.socket = ssl_context.wrap_socket(sock=server.socket, server_side=True)
         threading.Thread(target=server.serve_forever).start()

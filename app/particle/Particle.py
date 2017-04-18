@@ -36,16 +36,6 @@ class Particle:
         """Hacky conversion to JSON to avoid infinite loop with jsonify and
         nested neighbors
         """
-
-        """# TODO: Debug this to DRY out this method
-        particle_dict = self.__dict__
-        util.info("Dict looks like: " + str(particle_dict))
-        json = json.dumps(particle_dict, sort_keys = True, indent=4)
-        #json = json.dumps(particle_dict, default=lambda obj: obj.__dict__, sort_keys = True, indent=4)
-        util.info("And now it looks like: " + str(json))
-        json = "\n".join((" " * indent) + i for i in json.splitlines())
-        """
-
         json =  " " * indent + "{\n"
         json += " " * 2 * indent + "\"particle_id\": " + str(self.particle_id) + ",\n"
         json += " " * 2 * indent + "\"thread_num\": " + str(self.thread_num) + ",\n"
@@ -80,7 +70,7 @@ class Particle:
                 if euclidean_distance == 0:
                     force = max_force
                 else:
-                    force = params.force * distances[i] / euclidean_distance**3 / self.mass
+                    force = params.force * distances[i] / (euclidean_distance**3 * self.mass)
                 if force > max_force:
                     force = max_force
                 elif force < -1*max_force:

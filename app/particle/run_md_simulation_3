@@ -6,7 +6,7 @@
 #         Lawrence Berkeley National Laboratory
 #         National Energy Research Scientific Computing Center
 #
-# Usage: run_md_simulation [num_tasks] [num_particlecs]
+# Usage: run_md_simulation [num_tasks] [num_particles]
 #
 # Acknowledgment:
 #         This work was supported by the Director, Office of Science,
@@ -27,32 +27,31 @@ PROG=$(basename $0)
 
 error() {
     echo -e "ERROR: $*" >&2
+    usage
     exit 1
 }
 
 usage() {
-    echo "USAGE: $PROG [num_tasks] [num_particlecs]"
-
+    echo "USAGE: $PROG [num_tasks] [num_particles]" >&2
 }
 
-test $# -ne 2 && error "too few arguments" && usage
+test $# -ne 2 && error "must have exactly two arguments"
 
-mpi_host_file='../../mpihostsfile'
+MPI_HOST_FILE='/home/ccori/mpihostfile'
 
-# if there is a nonempty string within the brackets, then perform rsync
-# otherwise, do not perform rsync
-if [ "yes" ]; then
-    while read line; do
-        ip_addr=$(echo $line | tr -d [:space:] | cut -d '#' -f1)
-        if [ -n "$ip_addr" ]; then
-            echo '------------------------------------------------------------------------------------------'
-            echo "attempting rsync to $ip_addr"
-            rsync -aPvz --delete --rsync-path="mkdir -p ~/CompactCori && rsync" ~/CompactCori/ $ip_addr:~/CompactCori
-            echo '------------------------------------------------------------------------------------------'
+while read line; do
+    ip_addr=$(echo $line | tr -d [:space:] | cut -d '#' -f1)
+    if [ -n "$ip_addr" ]; then
+        echo '------------------------------------------------------------------------------------------'
+        echo "attempting rsync to $ip_addr"
+        rsync -aPvz --delete --rsync-path="mkdir -p ~/CompactCori && rsync" ~/CompactCori/ $ip_addr:~/CompactCori
+        if [ $? -eq 0 ]; then
+            echo "rsync successful"
+        else
+            echo "rsync failed"
         fi
-    done < "$mpi_host_file"
-else
-    echo 'no rsync'
-fi
+        echo '------------------------------------------------------------------------------------------'
+    fi
+done < $MPI_HOST_FILE
 
-mpirun --hostfile "$mpi_host_file" -np $1 --npernode 1 python3 "./particle_simulation.py" -n $2
+mpirun --hostfile $MPI_HOST_FILE -np $1 --npernode 1 python3 "./particle_simulation.py" -n $2
