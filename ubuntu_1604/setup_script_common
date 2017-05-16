@@ -1,0 +1,66 @@
+#!/bin/bash
+
+declare -r script_name="$(basename $BASH_SOURCE)"
+
+error() {
+    echo -e "ERROR: $*" >&2
+}
+
+usage() {
+    echo "USAGE: sudo ./${script_name}" >&2
+}
+
+if [[ "${USER}" != root ]]; then
+    error 'the execution of this script requires root privileges'
+    usage
+    exit 1
+fi
+
+if [[ ! "$(hostname)" =~ ^CompactCori[[:digit:]]+$ ]]; then
+    error 'the hostname is not in the correct format; please change it to CompactCori<node_index>'
+    exit 2
+fi
+
+declare -i -r node_id="$(hostname | tr --delete [:alpha:])"
+
+apt update
+apt --assume-yes upgrade
+apt --assume-yes install checkinstall git libopenmpi-dev libusb-1.0 openssh-server python3-mpi4py
+if [[ "${node_id}" -eq 1 ]]; then
+    apt --assume-yes install apt-cacher-ng nmap sshpass
+fi
+apt --assume-yes autoremove
+
+ufw enable
+ufw allow in on enp0s25 to any
+
+rm --force --recursive /home/ccori/.ssh
+
+su --login ccori << \END
+    ssh-keygen -f /home/ccori/.ssh/id_rsa -N ''
+
+    git clone https://github.com/boredHuman/CompactCori
+    git clone https://github.com/todbot/blink1.git
+END
+
+cd /home/ccori/blink1/commandline
+checkinstall --default
+cp /home/ccori/blink1/linux/51-blink1.rules /etc/udev/rules.d
+udevadm control --reload
+
+cp /etc/network/interfaces{,.bak}
+cat > /etc/network/interfaces << END
+# interfaces(5) file used by ifup(8) and ifdown(8)
+auto lo
+iface lo inet loopback
+
+auto enp0s25
+iface enp0s25 inet static
+address 10.0.0.$((100 + node_id))
+END
+
+if [[ "${node_id}" -ne 1 ]]; then
+    echo 'Acquire::http::Proxy "http://10.0.0.101:3142";' > /etc/apt/apt.conf.d/01proxy
+fi
+
+shutdown --reboot now

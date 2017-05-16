@@ -1,0 +1,61 @@
+#!/bin/bash
+
+declare -r script_name="$(basename $BASH_SOURCE)"
+
+error() {
+    echo -e "ERROR: $*" >&2
+}
+
+usage() {
+    echo "USAGE: sudo ./${script_name}" >&2
+}
+
+if [[ "${USER}" != root ]]; then
+    error 'the execution of this script requires root privileges'
+    usage
+    exit 1
+fi
+
+tput reset
+echo -e '*** WARNING: PASSWORD CAN BE SEEN BY ANYONE ***\n'
+read -p 'Enter the password to slave nodes: ' SSHPASS
+declare -r -x SSHPASS
+tput reset
+
+read -p 'Enter the total number of nodes in Compact Cori: ' num_nodes
+declare -i -r -x num_nodes
+
+declare -i -r num_nodes_verify="$(nmap -sn 10.0.0.* | tail --lines 1 | cut --delimiter '(' --fields 2 | cut --delimiter ' ' --fields 1)"
+
+if [[ "${num_nodes}" != "${num_nodes_verify}" ]]; then
+    error "this script detected ${num_nodes_verify} nodes instead of ${num_nodes} nodes; please check and verify that the total number of nodes in Compact Cori is correct"
+    exit 2
+fi
+
+rm --force /home/ccori/mpihostfile
+rm --force --recursive /home/ccori/ssl
+rm --force /home/ccori/.ssh/authorized_keys
+rm --force /home/ccori/.ssh/known_hosts
+rm --force /tmp/temporary_file
+
+su ccori << \END
+    for (( i=1; i<=num_nodes; i++ )); do
+        echo "10.0.0.$((100 + i))" >> /home/ccori/mpihostfile
+        ssh-keyscan -H -t ecdsa "10.0.0.$((100 + i))" >> /home/ccori/.ssh/known_hosts
+    done
+
+    mkdir /home/ccori/ssl
+    openssl req -days 36525 -keyout /home/ccori/ssl/compact_cori.key -newkey rsa:2048 -nodes -out /home/ccori/ssl/compact_cori.crt -subj '/C=us/ST=california/L=berkeley/O=lawrence berkeley national laboratory/OU=national energy research scientific computing center/CN=compact cori/emailAddress=no email available' -x509
+
+    cat /home/ccori/.ssh/id_rsa.pub > /home/ccori/.ssh/authorized_keys
+    for (( i=2; i<=num_nodes; i++ )); do
+        sshpass -e scp "10.0.0.$((100 + i)):/home/ccori/.ssh/id_rsa.pub" /tmp/temporary_file
+        cat /tmp/temporary_file >> /home/ccori/.ssh/authorized_keys
+    done
+    rm --force /tmp/temporary_file
+
+    for (( i=2; i<=num_nodes; i++ )); do
+        sshpass -e scp /home/ccori/.ssh/authorized_keys "10.0.0.$((100 + i)):/home/ccori/.ssh"
+        sshpass -e scp /home/ccori/.ssh/known_hosts "10.0.0.$((100 + i)):/home/ccori/.ssh"
+    done
+END

@@ -139,22 +139,22 @@ params.num_active_workers = params.comm.bcast(params.num_active_workers)
 update_new_num_active_workers()
 
 colors = {
-    0: "255,255,255", # white
-    1: "255,000,000", # red
-    2: "255,255,000", # yellow
-    3: "000,255,000", # green
-    4: "000,255,255", # cyan
-    5: "000,000,255", # blue
-    6: "255,000,255", # magenta
-    7: "255,000,000", # red
-    8: "255,255,000", # yellow
-    9: "000,255,000", # green
-    10: "000,255,255", # cyan
-    11: "000,000,255", # blue
-    12: "255,000,255", # magenta
-    13: "255,000,000", # red
-    14: "255,255,000", # yellow
-    15: "000,255,000", # green
+    0: "#ffffff",
+    1: "#ff0000",
+    2: "#ff6600",
+    3: "#ffcc00",
+    4: "#ccff00",
+    5: "#66ff00",
+    6: "#00ff00",
+    7: "#00ff66",
+    8: "#00ffcc",
+    9: "#00ccff",
+    10: "#0066ff",
+    11: "#0000ff",
+    12: "#6600ff",
+    13: "#cc00ff",
+    14: "#ff00cc",
+    15: "#ff0066",
 }
 
 FNULL = open(os.devnull, 'w')
@@ -245,7 +245,7 @@ def main():
         from http.server import HTTPServer
         import ssl
         ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
-        ssl_context.load_cert_chain(certfile='/home/ccori/ssl/cc.crt', keyfile='/home/ccori/ssl/cc.key')
+        ssl_context.load_cert_chain(certfile='/home/ccori/ssl/compact_cori.crt', keyfile='/home/ccori/ssl/compact_cori.key')
         port_number = 8080
         host = "10.0.0.101"
         server = HTTPServer((host, port_number), Server)

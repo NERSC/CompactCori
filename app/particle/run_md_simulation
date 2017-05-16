@@ -6,7 +6,7 @@
 #         Lawrence Berkeley National Laboratory
 #         National Energy Research Scientific Computing Center
 #
-# Usage: run_md_simulation [num_tasks] [num_particles]
+# Usage: run_md_simulation [num_tasks] [num_particlecs]
 #
 # Acknowledgment:
 #         This work was supported by the Director, Office of Science,
@@ -27,18 +27,20 @@ PROG=$(basename $0)
 
 error() {
     echo -e "ERROR: $*" >&2
-    usage
     exit 1
 }
 
 usage() {
-    echo "USAGE: $PROG [num_tasks] [num_particles]" >&2
+    echo "USAGE: $PROG [num_tasks] [num_particlecs]"
+
 }
 
-test $# -ne 2 && error "must have exactly two arguments"
+test $# -ne 2 && error "too few arguments" && usage
 
 for i in {2..15}; do
     scp -r ~/CompactCori/app/particle/* compactcori$i:~/CompactCori/app/particle/
 done
 
-mpirun -n $1 --hostfile /home/ccori/mpihostfile python3 ~/CompactCori/app/particle/particle_simulation.py -n $2
+mpirun -n $1 --hostfile /home/ccori/mpihostsfile python3 ~/CompactCori/app/particle/particle_simulation.py -n $2
+#mpirun -n $1 python3 ~/CompactCori/app/particle/particle_simulation.py -n $2
+

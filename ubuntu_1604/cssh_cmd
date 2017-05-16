@@ -1,0 +1,23 @@
+#!/bin/bash
+
+declare -r script_name="$(basename $BASH_SOURCE)"
+
+error() {
+    echo -e "ERROR: $*" >&2
+}
+
+usage() {
+    echo "USAGE: ./${script_name} <index_start> <index_end>" >&2
+}
+
+if [[ "$#" -ne 2 ]]; then
+    error 'this script must have exactly 2 arguments'
+    usage
+    exit 1
+fi
+
+for (( i=$1; i<=$2; i++ )); do
+    ip_addr="${ip_addr} 10.0.0.$((100 + i))"
+done
+
+cssh ${ip_addr}

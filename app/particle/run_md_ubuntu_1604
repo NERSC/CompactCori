@@ -1,0 +1,23 @@
+#!/bin/bash
+
+declare -r script_name="$(basename $BASH_SOURCE)"
+
+error() {
+    echo -e "ERROR: $*" >&2
+}
+
+usage() {
+    echo "USAGE: ./${script_name} <num_nodes> <num_particles>" >&2
+}
+
+if [[ "$#" -ne 2 ]]; then
+    error 'this script must have exactly 2 arguments'
+    usage
+    exit 1
+fi
+
+for (( i=2; i<="$1"; i++ )); do
+    scp -r /home/ccori/CompactCori/app/particle/* "10.0.0.$((100 + i)):/home/ccori/CompactCori/app/particle"
+done
+
+mpirun --hostfile /home/ccori/mpihostfile -np $1 --npernode 1 python3 /home/ccori/CompactCori/app/particle/particle_simulation.py -n $2
