@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# mpi_test: test if mpi has been set up properly on the assumption that:
+#     - blink(1) usb status light is plugged in for the nodes that are being tested
+#
+# Usage: mpi_test <index_start> <index_end>
 
 declare -r script_name="$(basename $BASH_SOURCE)"
 

@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# cssh_cmd: allows multiple ssh terminals to be opened for the nodes that are being sshed into
+#
+# Usage: cssh_cmd <index_start> <index_end>
 
 declare -r script_name="$(basename $BASH_SOURCE)"
 

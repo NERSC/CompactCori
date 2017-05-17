@@ -247,7 +247,7 @@ def main():
         ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
         ssl_context.load_cert_chain(certfile='/home/ccori/ssl/compact_cori.crt', keyfile='/home/ccori/ssl/compact_cori.key')
         port_number = 8080
-        host = "10.0.0.101"
+        host = "localhost"
         server = HTTPServer((host, port_number), Server)
         server.socket = ssl_context.wrap_socket(sock=server.socket, server_side=True)
         threading.Thread(target=server.serve_forever).start()

@@ -1,4 +1,13 @@
 #!/bin/bash
+#
+# setup_script_common: set up a node in the Compact Cori cluster with the assumptions that:
+#     - the node has a clean Ubuntu 16.04 LTS installation
+#     - the node's computer name is CompactCori<node_index>, where node_index is a non negative integer
+#     - the node's user name is ccori
+#     - the node does NOT have blink(1) usb status light plugged into it
+#     - this script is with sudo
+#
+# Usage: sudo ./setup_script_common
 
 declare -r script_name="$(basename $BASH_SOURCE)"
 
@@ -23,13 +32,17 @@ fi
 
 declare -i -r node_id="$(hostname | tr --delete [:alpha:])"
 
-apt update
-apt --assume-yes upgrade
-apt --assume-yes install checkinstall git libopenmpi-dev libusb-1.0 openssh-server python3-mpi4py
 if [[ "${node_id}" -eq 1 ]]; then
-    apt --assume-yes install apt-cacher-ng nmap sshpass
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+    sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
 fi
-apt --assume-yes autoremove
+apt-get update
+apt-get --assume-yes upgrade
+apt-get --assume-yes install checkinstall git libopenmpi-dev libusb-1.0 openssh-server python3-mpi4py
+if [[ "${node_id}" -eq 1 ]]; then
+    apt-get --assume-yes install apt-cacher-ng google-chrome-stable nmap sshpass
+fi
+apt-get --assume-yes autoremove
 
 ufw enable
 ufw allow in on enp0s25 to any
