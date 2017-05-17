@@ -1,11 +1,10 @@
-### Compact Cori (Ubuntu setup)
-
+### COMPACT CORI (UBUNTU SETUP)
 To run the simple molecular dynamics simulation:
 1. cd /home/ccori/CompactCori/app/particle
 2. ./run_md_ubuntu_1604 <num_nodes> <num_particles>
 3. add or accept a security exception to https://localhost:8080/api/get_particles
 
-### SETUP BEGIN
+### SETUP
 1. let N be the number of nodes in your Compact Cori cluster
 2. for every node (node #1 thru node #N):
     1. ensure blink(1) is not plugged
@@ -18,9 +17,8 @@ To run the simple molecular dynamics simulation:
     1. ensure it has internet access
     2. ensure it is connected to the network switch
     3. execute "setup_script_master"
-### SETUP END
 
-### STEP 1 PART B BEGIN
+### STEP 1 PART B
 1. power off Intel NUC
 2. ensure there is internet access
 3. insert USB flash drive containing Ubuntu 16.10.2
@@ -68,4 +66,3 @@ To run the simple molecular dynamics simulation:
 3. press ENTER
 
 1. wait for node to restart
-### STEP 1 PART B END
