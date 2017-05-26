@@ -55,6 +55,9 @@ su ccori << \END
     mkdir /home/ccori/cc_ca
     cp /home/ccori/CompactCori/ubuntu_1604/cc_ca.cnf /home/ccori/cc_ca
     openssl req -out /home/ccori/cc_ca/cc_ca.crt -newkey rsa:4096 -nodes -keyout /home/ccori/cc_ca/cc_ca.key -config /home/ccori/cc_ca/cc_ca.cnf -subj '/C=US/ST=California/L=Berkeley/O=Lawrence Berkeley National Laboratory/OU=National Energy Research Scientific Computing Center/CN=10.0.0.101:8080\/api\/v1\/get_particles' -x509 -days 10000
+
+    mkdir --parents /home/ccori/.pki/nssdb
+    certutil -N -d sql:/home/ccori/.pki/nssdb --empty-password
     certutil -A -d sql:/home/ccori/.pki/nssdb -i /home/ccori/cc_ca/cc_ca.crt -n cc_ca.crt -t 'P,,'
 
     cat /home/ccori/.ssh/id_rsa.pub > /home/ccori/.ssh/authorized_keys
