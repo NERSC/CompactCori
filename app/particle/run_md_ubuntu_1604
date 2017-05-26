@@ -20,7 +20,7 @@ if [[ "$#" -ne 2 ]]; then
     exit 1
 fi
 
-google-chrome https://playcanv.as/p/RfDIHpmZ/ https://10.0.0.101:8080/api/v1/get_particles &
+google-chrome --password-store=basic https://playcanv.as/p/RfDIHpmZ/ https://10.0.0.101:8080/api/v1/get_particles &
 
 for (( i=2; i<="$1"; i++ )); do
     scp -r /home/ccori/CompactCori/app/particle/* "10.0.0.$((100 + i)):/home/ccori/CompactCori/app/particle"
