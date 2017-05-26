@@ -8,14 +8,16 @@ To run the simple molecular dynamics simulation:
 2. for every node (node #1 thru node #N):
     1. ensure blink(1) is not plugged
     2. perform "STEP 1 PART B" as shown below
-    3. execute "setup_script_common" in the terminal
-    4. plug in blink(1)
-    5. ensure it remains powered on
-    6. ensure it is connected to the network switch
+    3. copy "setup_script_common" into /home/ccori or /home/ccori/Desktop
+    4. execute "setup_script_common" in the terminal
+    5. plug in blink(1)
+    6. ensure it remains powered on
+    7. ensure it is connected to the network switch
 3. for the master node (node #1 only):
     1. ensure it has internet access
     2. ensure it is connected to the network switch
-    3. execute "setup_script_master"
+    3. copy "setup_script_master" into /home/ccori or /home/ccori/Desktop
+    4. execute "setup_script_master" in the terminal
 
 ### STEP 1 PART B
 1. power off Intel NUC
