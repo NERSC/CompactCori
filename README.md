@@ -1,4 +1,4 @@
-###Compact Cori
+### Compact Cori
 
 Currently, the installation of Compact Cori at CRT requires that two scripts be
 run to start the simulation.  One of the nodes (`CompactCori16`) is currently
