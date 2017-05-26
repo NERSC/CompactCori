@@ -41,7 +41,7 @@ apt update
 apt --assume-yes full-upgrade
 apt --assume-yes install checkinstall git libopenmpi-dev libusb-1.0 openssh-server python3-mpi4py
 if [[ "${node_id}" -eq 1 ]]; then
-    apt --assume-yes install apt-cacher-ng google-chrome-stable libnss3-tools nmap sshpass
+    apt --assume-yes install apt-cacher-ng clusterssh google-chrome-stable libnss3-tools nmap sshpass vim
 fi
 
 ufw enable
@@ -52,8 +52,11 @@ rm --force --recursive /home/ccori/.ssh
 su --login ccori << \END
     ssh-keygen -f /home/ccori/.ssh/id_rsa -N ''
 
+    git clone https://github.com/amix/vimrc.git /home/ccori/.vim_runtime
     git clone https://github.com/boredHuman/CompactCori
     git clone https://github.com/todbot/blink1.git
+
+    sh /home/ccori/.vim_runtime/install_awesome_vimrc.sh
 END
 
 cd /home/ccori/blink1/commandline
