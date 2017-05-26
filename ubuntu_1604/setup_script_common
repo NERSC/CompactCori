@@ -5,6 +5,7 @@
 #     - the node's computer name is CompactCori<node_index>, where node_index is a non negative integer
 #     - the node's user name is ccori
 #     - the node does NOT have blink(1) usb status light plugged into it
+#     - the node has internet access
 #     - this script is with sudo
 #
 # Usage: sudo ./setup_script_common
@@ -33,16 +34,15 @@ fi
 declare -i -r node_id="$(hostname | tr --delete [:alpha:])"
 
 if [[ "${node_id}" -eq 1 ]]; then
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+    wget -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
     sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
 fi
-apt-get update
-apt-get --assume-yes upgrade
-apt-get --assume-yes install checkinstall git libopenmpi-dev libusb-1.0 openssh-server python3-mpi4py
+apt update
+apt --assume-yes full-upgrade
+apt --assume-yes install checkinstall git libopenmpi-dev libusb-1.0 openssh-server python3-mpi4py
 if [[ "${node_id}" -eq 1 ]]; then
-    apt-get --assume-yes install apt-cacher-ng google-chrome-stable nmap sshpass
+    apt --assume-yes install apt-cacher-ng google-chrome-stable libnss3-tools nmap sshpass
 fi
-apt-get --assume-yes autoremove
 
 ufw enable
 ufw allow in on enp0s25 to any
