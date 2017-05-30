@@ -52,10 +52,9 @@ rm --force --recursive /home/ccori/.ssh
 su --login ccori << \END
     ssh-keygen -f /home/ccori/.ssh/id_rsa -N ''
 
-    git clone https://github.com/amix/vimrc.git /home/ccori/.vim_runtime
-    git clone https://github.com/boredHuman/CompactCori
     git clone https://github.com/todbot/blink1.git
 
+    git clone https://github.com/amix/vimrc.git /home/ccori/.vim_runtime
     sh /home/ccori/.vim_runtime/install_awesome_vimrc.sh
 END
 
