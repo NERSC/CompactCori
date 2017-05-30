@@ -68,3 +68,8 @@ To run the simple molecular dynamics simulation:
 3. press ENTER
 
 1. wait for node to restart
+
+### DEBUG
+If Compact Cori encounters any setup problems, mpi_test and cssh_cmd can both be used to debug the errors:
+1. mpi_test <index_start> <index_end>
+2. cssh_cmd <index_start> <index_end>
