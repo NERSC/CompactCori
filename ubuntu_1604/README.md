@@ -8,12 +8,13 @@ To run the simple molecular dynamics simulation:
 2. for every node (node #1 thru node #N):
     1. ensure blink(1) is not plugged
     2. perform "STEP 1 PART B" as shown below
-    3. download and unzip CompactCori-master.zip from https://github.com/boredHuman/CompactCori into /home/ccori
-    4. rename /home/ccori/CompactCori-master to /home/ccori/CompactCori
-    5. execute setup_script_common from /home/ccori/CompactCori/ubuntu_1604
-    6. plug in blink(1)
-    7. ensure it remains powered on
-    8. ensure it is connected to the network switch
+    3. download CompactCori-master.zip from either https://github.com/NERSC/CompactCori or https://github.com/boredHuman/CompactCori, whichever is newer
+    4. unzip CompactCori-master.zip into /home/ccori
+    5. rename /home/ccori/CompactCori-master to /home/ccori/CompactCori
+    6. execute setup_script_common from /home/ccori/CompactCori/ubuntu_1604
+    7. plug in blink(1)
+    8. ensure it remains powered on
+    9. ensure it is connected to the network switch
 3. for the master node (node #1 only):
     1. ensure it has internet access
     2. ensure it is connected to the network switch
