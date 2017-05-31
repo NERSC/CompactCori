@@ -7,7 +7,6 @@
 #     -h: (optional) print a usage message and exit
 #     -n: (required) number of nodes to be used in the simulation, must be an integer greater than or equal to 2
 #     -p: (required) number of particles to be used in the simulation, must be an integer greater than or equal to 1
-#
 
 declare -r script_name="$(basename $BASH_SOURCE)"
 declare c_flag='false'
