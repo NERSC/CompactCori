@@ -1,4 +1,4 @@
-### Compact Cori
+### Compact Cori (Debian setup)
 
 Currently, the installation of Compact Cori at CRT requires that two scripts be
 run to start the simulation.  One of the nodes (`CompactCori16`) is currently
@@ -12,3 +12,6 @@ To run the simulation:
 2. Start the visualization server on the visualization node.  Run the script on
    the desktop to start the visualization server.
 3. Point Firefox to `localhost:8081` to view the simulation
+
+### Compact Cori (Ubuntu setup)
+The instructions are located in ubuntu_1604/README.md.
