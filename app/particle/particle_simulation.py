@@ -98,7 +98,7 @@ def add_one_particle(particle_id):
 
 def subtract_one_particle(particle_id):
     if params.rank is 0:
-        for i in range(1, params.num_active_workers+1):
+        for _ in range(params.num_active_workers):
             new_particles = params.comm.recv(source = mpi.ANY_SOURCE, status = params.mpi_status, tag = 0)
             params.partitions[params.mpi_status.Get_source()].particles = new_particles
         params.init_total_energy -= params.comm.recv(source = mpi.ANY_SOURCE, status = params.mpi_status, tag = 88)
