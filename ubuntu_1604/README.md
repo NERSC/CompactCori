@@ -1,7 +1,6 @@
 ### COMPACT CORI (UBUNTU SETUP)
 To run the simple molecular dynamics simulation:
-1. cd /home/ccori/CompactCori/app/particle
-2. ./run_md_ubuntu_1604 <num_nodes> <num_particles>
+1. ./run_md_ubuntu_1604 [-c] [-h] -n <num_nodes> -p <num_particles>
 
 ### SETUP
 1. let N be the number of nodes in your Compact Cori cluster
