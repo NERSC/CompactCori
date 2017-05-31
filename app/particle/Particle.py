@@ -30,19 +30,12 @@ class Particle:
         self.velocity = velocity
         self.mass = mass
         self.radius = radius
+        self.particle_initial_energy = 0.5 * mass * sum([i**2 for i in velocity])
 
     def jsonify(self, indent = 4):
         """Hacky conversion to JSON to avoid infinite loop with jsonify and
         nested neighbors
         """
-##       TODO: Debug this to DRY out this method
-#        particle_dict = self.__dict__
-#        util.info("Dict looks like: " + str(particle_dict))
-#        json = json.dumps(particle_dict, sort_keys = True, indent=4)
-##        json = json.dumps(particle_dict, default=lambda obj: obj.__dict__, sort_keys = True, indent=4)
-#        util.info("And now it looks like: " + str(json))
-#        json = "\n".join((" " * indent) + i for i in json.splitlines())
-
         json =  " " * indent + "{\n"
         json += " " * 2 * indent + "\"particle_id\": " + str(self.particle_id) + ",\n"
         json += " " * 2 * indent + "\"thread_num\": " + str(self.thread_num) + ",\n"
@@ -59,7 +52,6 @@ class Particle:
         y = self.position[1] - particle.position[1]
         z = self.position[2] - particle.position[2]
         center_to_center = math.sqrt((x**2) + (y**2) + (z**2))
-        #return (center_to_center - self.radius - particle.radius, (x, y, z))
         return (center_to_center, (x, y, z))
 
     def update_velocity(self, particles):
@@ -69,20 +61,16 @@ class Particle:
         neighbors = []
         for particle in particles:
             euclidean_distance, distances = self.euclidean_distance_to(particle)
-            #if euclidean_distance <= 0 and particle is not self:
             if euclidean_distance <= 5*(self.radius + particle.radius) and particle is not self:
                 neighbors.append((particle, distances, euclidean_distance))
 
-        #p_energy = 0
         max_force = 5000
         for neighbor, distances, euclidean_distance in neighbors:
-            #p_energy = p_energy + 5000 *( ( 1 / euclidean_distance ) - (1 / (5*(self.radius + particle.radius) ) )
             for i in range(3):
-                #max_force = 10
                 if euclidean_distance == 0:
                     force = max_force
                 else:
-                    force = params.force * (1 * (distances[i])/euclidean_distance**3)/self.mass
+                    force = params.force * distances[i] / (euclidean_distance**3 * self.mass)
                 if force > max_force:
                     force = max_force
                 elif force < -1*max_force:
@@ -94,7 +82,6 @@ class Particle:
         Particle
         """
         delta = [component*time for component in self.velocity]
-#        util.info("Delta is " + str(delta))
         self.position[0] += delta[0]
         self.position[1] += delta[1]
         self.position[2] += delta[2]
@@ -109,10 +96,6 @@ class Particle:
         simulation = [params.simulation_width, params.simulation_height, params.simulation_depth]
         for i in range(3):
             while self.position[i] < 0 or self.position[i]  > simulation[i]:
-#                util.debug(str(self.particle_id) + " is out of bounds: " + str(self.position) + " and is going this fast:" + str(self.velocity))
                 self.velocity[i] *= -1
                 self.position[i] = self.position[i]*-1 if self.position[i] < 0\
                     else 2*simulation[i] - self.position[i]
-#            util.debug("I am no longer out of bounds: " + str(self.position))
-#        util.info("Particle " + str(self.particle_id) + " with mass " + str(self.mass) + " is at " + str(self.position))
-#        util.info("Particle " + str(self.particle_id) + " is moving: " + str(self.velocity))

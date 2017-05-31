@@ -1,0 +1,74 @@
+#!/bin/bash
+#
+# setup_script_master: set up the master node in the Compact Cori cluster with the assumptions that:
+#     - the node's computer name is CompactCori1
+#     - every node is powered on
+#     - every node is connected to the same network switch
+#     - every slave node has the same password
+#     - the node has already been run with setup_script_common
+#
+# Usage: sudo ./setup_script_master
+
+declare -r script_name="$(basename $BASH_SOURCE)"
+
+error() {
+    echo -e "ERROR: $*" >&2
+}
+
+usage() {
+    echo "USAGE: sudo ./${script_name}" >&2
+}
+
+if [[ "${USER}" != root ]]; then
+    error 'the execution of this script requires root privileges'
+    usage
+    exit 1
+fi
+
+echo -e '\n\n\n*** WARNING: PASSWORD CAN BE SEEN BY ANYONE ***\n\n\n'
+read -p 'Enter the password to slave nodes: ' SSHPASS
+declare -r -x SSHPASS
+tput reset
+
+read -p 'Enter the total number of nodes in Compact Cori: ' num_nodes
+declare -i -r -x num_nodes
+
+declare -i -r num_nodes_verify="$(nmap -sn 10.0.0.* | tail --lines 1 | cut --delimiter '(' --fields 2 | cut --delimiter ' ' --fields 1)"
+
+if [[ "${num_nodes}" != "${num_nodes_verify}" ]]; then
+    error "this script detected ${num_nodes_verify} nodes instead of ${num_nodes} nodes; please check and verify that the total number of nodes in Compact Cori is correct"
+    exit 2
+fi
+
+rm --force --recursive /home/ccori/cc_ca
+rm --force /home/ccori/mpihostfile
+rm --force /home/ccori/.ssh/authorized_keys
+rm --force /home/ccori/.ssh/known_hosts
+rm --force /tmp/temporary_file
+
+su ccori << \END
+    for (( i=1; i<=num_nodes; i++ )); do
+        echo "10.0.0.$((100 + i))" >> /home/ccori/mpihostfile
+        ssh-keyscan -H -t ecdsa "10.0.0.$((100 + i))" >> /home/ccori/.ssh/known_hosts
+    done
+
+    mkdir /home/ccori/cc_ca
+    cp /home/ccori/CompactCori/ubuntu_1604/cc_ca.cnf /home/ccori/cc_ca
+    openssl req -out /home/ccori/cc_ca/cc_ca.crt -newkey rsa:4096 -nodes -keyout /home/ccori/cc_ca/cc_ca.key -config /home/ccori/cc_ca/cc_ca.cnf -subj '/C=US/ST=California/L=Berkeley/O=Lawrence Berkeley National Laboratory/OU=National Energy Research Scientific Computing Center/CN=10.0.0.101:8080\/api\/v1\/get_particles' -x509 -days 10000
+
+    mkdir --parents /home/ccori/.pki/nssdb
+    certutil -N -d sql:/home/ccori/.pki/nssdb --empty-password
+    certutil -A -d sql:/home/ccori/.pki/nssdb -i /home/ccori/cc_ca/cc_ca.crt -n cc_ca.crt -t 'P,,'
+
+    cat /home/ccori/.ssh/id_rsa.pub > /home/ccori/.ssh/authorized_keys
+    for (( i=2; i<=num_nodes; i++ )); do
+        sshpass -e scp "10.0.0.$((100 + i)):/home/ccori/.ssh/id_rsa.pub" /tmp/temporary_file
+        cat /tmp/temporary_file >> /home/ccori/.ssh/authorized_keys
+    done
+    rm --force /tmp/temporary_file
+
+    for (( i=2; i<=num_nodes; i++ )); do
+        sshpass -e scp /home/ccori/.ssh/authorized_keys "10.0.0.$((100 + i)):/home/ccori/.ssh"
+        sshpass -e scp /home/ccori/.ssh/known_hosts "10.0.0.$((100 + i)):/home/ccori/.ssh"
+    done
+END

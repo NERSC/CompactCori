@@ -1,0 +1,78 @@
+#!/bin/bash
+#
+# run_md_ubuntu_1604 - run the MD simulation on Compact Cori for the Ubuntu setup
+#
+# Usage: run_md_ubuntu_1604 [-c] [-h] -n <num_nodes> -p <num_particles>
+#     -c: (optional) perform a recursive secure copy of /home/ccori/CompactCori/app/particle/* from node #1 into node #2 thru #<num_nodes>
+#     -h: (optional) print a usage message and exit
+#     -n: (required) number of nodes to be used in the simulation, must be an integer greater than or equal to 2
+#     -p: (required) number of particles to be used in the simulation, must be an integer greater than or equal to 1
+
+declare -r script_name="$(basename $BASH_SOURCE)"
+declare c_flag='false'
+
+error() {
+    echo -e "ERROR: $*" >&2
+}
+
+usage() {
+    cat >&2 << END
+Usage: run_md_ubuntu_1604 [-c] [-h] -n <num_nodes> -p <num_particles>
+    -c: (optional) perform a recursive secure copy of /home/ccori/CompactCori/app/particle/* from node #1 into node #2 thru #<num_nodes>
+    -h: (optional) print a usage message and exit
+    -n: (required) number of nodes to be used in the simulation, must be an integer greater than or equal to 2
+    -p: (required) number of particles to be used in the simulation, must be an integer greater than or equal to 1
+END
+}
+
+while getopts 'chn:p:' option; do
+    case $option in
+        c)
+            c_flag='true'
+            ;;
+        h)
+            usage
+            exit 0
+            ;;
+        n)
+            if [[ ${OPTARG} =~ ^[0-9]+$ ]] && [[ ${OPTARG} -ge 2 ]]; then
+                declare -r num_nodes="${OPTARG}"
+            else
+                error '<num_nodes> must be an integer greater than or equal to 2'
+                usage
+                exit 1
+            fi
+            ;;
+        p)
+            if [[ ${OPTARG} =~ ^[0-9]+$ ]] && [[ ${OPTARG} -ge 1 ]]; then
+                declare -r num_particles="${OPTARG}"
+            else
+                error '<num_particles> must be an integer greater than or equal to 1'
+                usage
+                exit 2
+            fi
+            ;;
+    esac
+done
+
+if [[ -z ${num_nodes} ]]; then
+    error 'missing -n <num_nodes>'
+    usage
+    exit 3
+fi
+
+if [[ -z ${num_particles} ]]; then
+    error 'missing -p <num_particles>'
+    usage
+    exit 4
+fi
+
+google-chrome --password-store=basic https://playcanv.as/p/RfDIHpmZ/ https://10.0.0.101:8080/api/v1/get_particles &
+
+if ${c_flag}; then
+    for (( i=2; i<="${num_nodes}"; i++ )); do
+        scp -r /home/ccori/CompactCori/app/particle/* "10.0.0.$((100 + i)):/home/ccori/CompactCori/app/particle"
+    done
+fi
+
+mpirun --hostfile /home/ccori/mpihostfile -np ${num_nodes} --npernode 1 python3 /home/ccori/CompactCori/app/particle/particle_simulation.py -n ${num_particles}

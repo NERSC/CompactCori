@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+# mpi_test: test if mpi has been set up properly on the assumption that:
+#     - blink(1) usb status light is plugged in for the nodes that are being tested
+#
+# Usage: mpi_test <index_start> <index_end>
+
+declare -r script_name="$(basename $BASH_SOURCE)"
+
+error() {
+    echo -e "ERROR: $*" >&2
+}
+
+usage() {
+    echo "USAGE: ./${script_name} <index_start> <index_end>" >&2
+}
+
+if [[ "$#" -ne 2 ]]; then
+    error 'this script must have exactly 2 arguments'
+    usage
+    exit 1
+fi
+
+for (( i=$1; i<=$2; i++ )); do
+    ip_addr="${ip_addr},10.0.0.$((100 + i))"
+done
+
+mpirun --host $ip_addr hostname
+
+mpirun --host $ip_addr blink1-tool --on
+mpirun --host $ip_addr blink1-tool --red
+mpirun --host $ip_addr blink1-tool --yellow
+mpirun --host $ip_addr blink1-tool --green
+mpirun --host $ip_addr blink1-tool --cyan
+mpirun --host $ip_addr blink1-tool --blue
+mpirun --host $ip_addr blink1-tool --magenta
+mpirun --host $ip_addr blink1-tool --off
